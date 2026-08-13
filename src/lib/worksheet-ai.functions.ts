@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { VISUAL_PROMPT, normalizeVisuals } from "./edu-visual-schema";
+import { AI_ERROR_AR, callAiGateway, parseJsonLoose, type GatewayMessage } from "./ai-gateway";
 
 /**
  * Free unlimited AI worksheet generator.
