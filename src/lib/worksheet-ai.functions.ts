@@ -42,13 +42,12 @@ ${VISUAL_PROMPT}
 - كل سؤال يجب أن يحتوي answer صحيحة ودقيقة.`;
 
 const MODELS = [
-  "google/gemini-3.6-flash",
   "google/gemini-3-flash-preview",
   "google/gemini-2.5-flash",
   "google/gemini-2.5-flash-lite",
-  "google/gemini-3.1-flash-lite",
   "google/gemini-2.5-pro",
 ];
+
 
 export type WorksheetQuestion = {
   n: number;
