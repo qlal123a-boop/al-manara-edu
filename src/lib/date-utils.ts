@@ -30,9 +30,10 @@ export function longDate(now: Date = new Date(), locale: LocaleDir = "ar"): stri
   return new Intl.DateTimeFormat(locale, { day: "numeric", month: "long", year: "numeric" }).format(now);
 }
 
-/** "الجمعة، 14 أغسطس 2026" */
+/** "الجمعة، 14 أغسطس 2026" — "Friday, August 14, 2026" in English. */
 export function fullDate(now: Date = new Date(), locale: LocaleDir = "ar"): string {
-  return `${weekdayName(now, locale)}، ${longDate(now, locale)}`.replace(locale === "en" ? "،" : "\u0000", ",");
+  const sep = locale === "ar" ? "، " : ", ";
+  return `${weekdayName(now, locale)}${sep}${longDate(now, locale)}`;
 }
 
 /** Hijri date, empty string when the runtime lacks the islamic calendar. */
