@@ -1,48 +1,101 @@
 /**
- * Shared A4 export helpers for generated worksheets / summaries.
- * Download PDF and Print are fully separate actions:
- *  - downloadNodeAsPdf(): builds a multi-page A4 PDF and saves it. Never opens a print dialog.
- *  - printNode(): opens the browser print dialog only. Never downloads a file.
+ * A4 export helpers for generated worksheets / summaries.
+ *
+ * The app theme is authored entirely in oklch(); html2canvas cannot parse modern
+ * color functions and stalls on them. So instead of rasterizing the live styled
+ * node, we build a *class-free* printable clone and style it with plain hex CSS.
+ * That clone is used for BOTH actions — but the two actions stay fully separate:
+ *  - downloadNodeAsPdf(): rasterizes the clone into a multi-page A4 PDF file. Never prints.
+ *  - printNode(): opens the browser print dialog with real selectable RTL text. Never downloads.
  */
 
-const COLOR_PROPS = [
-  "color", "backgroundColor", "borderTopColor", "borderRightColor",
-  "borderBottomColor", "borderLeftColor", "outlineColor",
-  "textDecorationColor", "caretColor", "columnRuleColor",
-] as const;
+const PRINT_WIDTH = 794; // px ≈ A4 width at 96dpi
 
-const isModern = (v: string) => /\b(lab|lch|oklab|oklch|color)\(/.test(v);
+const PRINT_CSS = `
+*{box-sizing:border-box}
+.mnr-doc{width:${PRINT_WIDTH}px;padding:32px 36px;background:#ffffff;color:#1f2937;
+  direction:rtl;text-align:right;font-family:inherit;font-size:14px;line-height:1.9}
+.mnr-doc h1{font-size:24px}
+.mnr-doc h2{font-size:21px;margin:0 0 6px;color:#1a237e;font-weight:800}
+.mnr-doc h3{font-size:16px;margin:14px 0 6px;color:#1a237e;font-weight:800}
+.mnr-doc header{text-align:center;border-bottom:2px solid #1a237e;padding-bottom:12px;margin-bottom:14px}
+.mnr-doc p{margin:6px 0}
+.mnr-doc article{border:1px solid #d8dbe6;border-radius:10px;padding:18px;margin-bottom:16px;background:#fff}
+.mnr-doc section{margin:12px 0;padding:12px 14px;border-radius:10px;background:#f4f5fa;border:1px solid #e3e6f0}
+.mnr-doc ul,.mnr-doc ol{margin:6px 0;padding-inline-start:22px}
+.mnr-doc li{margin:4px 0;break-inside:avoid}
+.mnr-doc ol>li{margin:8px 0}
+.mnr-doc table{width:100%;border-collapse:collapse;font-size:12.5px;margin:8px 0}
+.mnr-doc th,.mnr-doc td{border:1px solid #b9bed2;padding:6px 8px;text-align:right;vertical-align:top}
+.mnr-doc th{background:#eceefb;font-weight:800}
+.mnr-doc figure{margin:12px 0;padding:12px;border:1px solid #cfd3e6;border-radius:10px;background:#fafbff;break-inside:avoid}
+.mnr-doc figcaption{font-weight:800;color:#1a237e;margin-bottom:8px}
+.mnr-doc img{max-width:100%;height:auto}
+.mnr-doc b,.mnr-doc strong{font-weight:800}
+.mnr-doc span{display:inline}
+.mnr-doc .mnr-bar{display:block;height:10px;border-radius:6px;background:#c9a227}
+.mnr-doc .mnr-track{display:block;height:10px;flex:1;border-radius:6px;background:#e6e8f2;overflow:hidden}
+`;
 
-/** Tailwind v4 emits oklch()/lab() which html2canvas cannot parse — sanitize the clone. */
-function sanitize(doc: Document) {
-  doc.querySelectorAll<HTMLElement>("*").forEach((el) => {
-    const cs = doc.defaultView?.getComputedStyle(el);
-    if (!cs) return;
-    for (const prop of COLOR_PROPS) {
-      const val = cs[prop] as string;
-      if (val && isModern(val)) {
-        el.style.setProperty(
-          prop.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`),
-          prop === "backgroundColor" ? "transparent" : "#1f2937",
-        );
+const KEEP_INLINE = new Set(["width"]);
+
+/** Clone the node and strip every theme class / modern-color inline style. */
+function buildPrintableClone(node: HTMLElement): HTMLDivElement {
+  const wrap = document.createElement("div");
+  wrap.className = "mnr-doc";
+  const clone = node.cloneNode(true) as HTMLElement;
+
+  clone.querySelectorAll<HTMLElement>("[data-no-print], .print\\:hidden").forEach((el) => el.remove());
+
+  const all = [clone, ...Array.from(clone.querySelectorAll<HTMLElement>("*"))];
+  all.forEach((el) => {
+    const cls = el.getAttribute("class") ?? "";
+    const width = el.style.width;
+    el.removeAttribute("class");
+    el.removeAttribute("style");
+    // preserve chart bar geometry
+    if (width && KEEP_INLINE.has("width")) {
+      if (/bg-gradient-gold|rounded-full/.test(cls)) {
+        el.className = "mnr-bar";
+        el.style.width = width;
       }
     }
-    if (cs.backgroundImage && isModern(cs.backgroundImage)) el.style.backgroundImage = "none";
+    if (/overflow-hidden rounded-full bg-border|flex-1/.test(cls) && el.tagName === "SPAN" && el.children.length === 1) {
+      el.className = "mnr-track";
+    }
   });
+
+  wrap.appendChild(clone);
+  return wrap;
 }
 
-async function renderCanvas(node: HTMLElement): Promise<HTMLCanvasElement> {
+/** Mount the printable clone offscreen in the main document (fonts available). */
+function mountOffscreen(node: HTMLElement) {
+  const host = document.createElement("div");
+  host.setAttribute("aria-hidden", "true");
+  host.style.cssText = `position:fixed;top:0;left:-10000px;width:${PRINT_WIDTH}px;background:#fff;z-index:-1`;
+  const style = document.createElement("style");
+  style.textContent = PRINT_CSS;
+  const doc = buildPrintableClone(node);
+  host.append(style, doc);
+  document.body.appendChild(host);
+  return { host, doc, cleanup: () => host.remove() };
+}
+
+async function renderCanvas(el: HTMLElement): Promise<HTMLCanvasElement> {
   const { default: html2canvas } = await import("html2canvas");
-  return html2canvas(node, {
-    scale: Math.min(2, Math.max(1.5, window.devicePixelRatio || 1.5)),
+  return html2canvas(el, {
+    scale: 2,
     backgroundColor: "#ffffff",
     useCORS: true,
-    windowWidth: Math.max(node.scrollWidth, 900),
-    onclone: (doc: Document) => sanitize(doc),
+    logging: false,
+    imageTimeout: 8000,
+    width: PRINT_WIDTH,
+    windowWidth: PRINT_WIDTH,
   });
 }
 
-/** Slice one tall canvas into A4-proportioned page images, never cutting mid-content harshly. */
+/** Slice one tall canvas into A4-proportioned page images. */
 function sliceToA4Pages(canvas: HTMLCanvasElement): string[] {
   const pageH = Math.floor((canvas.width * 297) / 210);
   const pages: string[] = [];
@@ -76,49 +129,56 @@ export function safeFileName(base: string) {
   return (base || "document").replace(/[\\/:*?"<>|]+/g, "-").replace(/\s+/g, " ").trim().slice(0, 70);
 }
 
-/** DOWNLOAD ONLY — produces a real multi-page A4 PDF file. */
+/** DOWNLOAD ONLY — produces a real multi-page A4 PDF file. Never opens a print dialog. */
 export async function downloadNodeAsPdf(node: HTMLElement, fileBase: string) {
-  const [canvas, { default: jsPDF }] = await Promise.all([renderCanvas(node), import("jspdf")]);
-  const pages = sliceToA4Pages(canvas);
-  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-  pages.forEach((img, i) => {
-    if (i > 0) pdf.addPage();
-    pdf.addImage(img, "JPEG", 0, 0, 210, 297, undefined, "FAST");
-  });
-  saveBlob(pdf.output("blob"), `${safeFileName(fileBase)}.pdf`);
+  const { doc, cleanup } = mountOffscreen(node);
+  try {
+    const [canvas, { default: jsPDF }] = await Promise.all([renderCanvas(doc), import("jspdf")]);
+    const pages = sliceToA4Pages(canvas);
+    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    pages.forEach((img, i) => {
+      if (i > 0) pdf.addPage();
+      pdf.addImage(img, "JPEG", 0, 0, 210, 297, undefined, "FAST");
+    });
+    saveBlob(pdf.output("blob"), `${safeFileName(fileBase)}.pdf`);
+  } finally {
+    cleanup();
+  }
 }
 
-/** PRINT ONLY — opens the print dialog with clean A4 pages, downloads nothing. */
+/** PRINT ONLY — opens the print dialog with real selectable RTL text. Downloads nothing. */
 export async function printNode(node: HTMLElement, title: string) {
-  const canvas = await renderCanvas(node);
-  const pages = sliceToA4Pages(canvas);
+  const { doc, cleanup } = mountOffscreen(node);
+  const html = doc.outerHTML;
+  cleanup();
+
+  const fontFamily = getComputedStyle(document.body).fontFamily;
   const frame = document.createElement("iframe");
   frame.setAttribute("aria-hidden", "true");
   frame.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0";
   document.body.appendChild(frame);
-  const doc = frame.contentDocument!;
-  doc.open();
-  doc.write(
-    `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${title.replace(/</g, "")}</title>` +
-      `<style>@page{size:A4 portrait;margin:0}html,body{margin:0;padding:0;background:#fff}` +
-      `img{display:block;width:100%;height:auto;page-break-after:always;break-after:page}` +
-      `img:last-child{page-break-after:auto;break-after:auto}</style></head><body>` +
-      pages.map((p) => `<img src="${p}">`).join("") +
-      `</body></html>`,
+  const idoc = frame.contentDocument!;
+  idoc.open();
+  idoc.write(
+    `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8">` +
+      `<title>${title.replace(/[<>]/g, "")}</title><style>` +
+      `@page{size:A4 portrait;margin:12mm}` +
+      `html,body{margin:0;padding:0;background:#fff;font-family:${fontFamily.replace(/[<>]/g, "")}}` +
+      `.mnr-doc{width:auto!important;padding:0!important}` +
+      PRINT_CSS +
+      `</style></head><body>${html}</body></html>`,
   );
-  doc.close();
-  const done = () => setTimeout(() => frame.remove(), 1500);
-  const start = () => {
-    try {
-      frame.contentWindow?.focus();
-      frame.contentWindow?.print();
-    } finally {
-      done();
-    }
-  };
-  const imgs = Array.from(doc.images);
+  idoc.close();
+
+  const imgs = Array.from(idoc.images);
   await Promise.all(
     imgs.map((im) => (im.complete ? Promise.resolve() : new Promise((r) => { im.onload = r; im.onerror = r; }))),
   );
-  setTimeout(start, 120);
+  await new Promise((r) => setTimeout(r, 150));
+  try {
+    frame.contentWindow?.focus();
+    frame.contentWindow?.print();
+  } finally {
+    setTimeout(() => frame.remove(), 2000);
+  }
 }
