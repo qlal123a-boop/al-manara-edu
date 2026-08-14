@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { callAiGateway, type GatewayMessage } from "./ai-gateway";
+
 
 const messageSchema = z.object({
   role: z.enum(["user", "assistant"]),
@@ -27,36 +29,11 @@ const SYSTEM = `أنت "مساعد المنارة الذكي - تطوير الم
 
 هويّة المطوِّر (إلزامية): إذا سُئلت من طوّرك أو من مؤسّسك أو ما شابه، أجب حرفيًا: "تم تطويري بواسطة المبرمج عبد الهادي رائد نعمان قلالوة — Abdul Hadi Raed Numan Qalalweh". لا تذكر أي مزوّد ذكاء اصطناعي آخر إطلاقًا.`;
 
-type GatewayContentPart =
-  | { type: "text"; text: string }
-  | { type: "image_url"; image_url: { url: string } };
-
-type GatewayMessage = { role: "system" | "user" | "assistant"; content: string | GatewayContentPart[] };
-
 export const tutorChat = createServerFn({ method: "POST" })
   .inputValidator((d) => inputSchema.parse(d))
   .handler(async ({ data }) => {
     const lastUserMsg = [...data.messages].reverse().find((m) => m.role === "user");
-    const userText = lastUserMsg?.content || "";
-    const fallbackReply = buildSmartFallback(userText);
-
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) return { reply: fallbackReply };
-
-    // Prefer newest free preview model, then flash/lite fallbacks
-    // Gemini-only chain (free tier, vision-capable) — no OpenAI fallbacks.
-    const hasImage = data.messages.some((m) => m.imageDataUrl);
-    const models = hasImage
-      ? [
-          "google/gemini-2.5-flash",
-          "google/gemini-2.5-flash-lite",
-          "google/gemini-2.5-pro",
-        ]
-      : [
-          "google/gemini-2.5-flash",
-          "google/gemini-2.5-flash-lite",
-          "google/gemini-2.5-pro",
-        ];
+    const fallbackReply = buildSmartFallback(lastUserMsg?.content || "");
 
     const gatewayMessages: GatewayMessage[] = [
       { role: "system", content: SYSTEM },
@@ -74,25 +51,16 @@ export const tutorChat = createServerFn({ method: "POST" })
       }),
     ];
 
-    for (const model of models) {
-      try {
-        const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-          body: JSON.stringify({ model, messages: gatewayMessages }),
-        });
-        if (res.ok) {
-          const json = await res.json() as { choices?: Array<{ message?: { content?: string } }> };
-          const reply = json.choices?.[0]?.message?.content?.trim();
-          if (reply) return { reply };
-          continue;
-        }
-        // On any error (402/429/5xx/etc) try the next model
-      } catch { /* network — try next */ }
-    }
-    // All models exhausted → smart educational fallback (never expose credit errors)
-    return { reply: fallbackReply };
+    const res = await callAiGateway(process.env.LOVABLE_API_KEY, {
+      messages: gatewayMessages,
+      label: "tutor",
+      timeoutMs: 90_000,
+    });
+
+    // Never surface provider/HTTP detail to students — degrade to a useful reply.
+    return { reply: res.ok ? res.content : fallbackReply };
   });
+
 
 function buildSmartFallback(question: string): string {
   const q = question.trim();
