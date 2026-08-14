@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { callAiGateway, type GatewayMessage } from "./ai-gateway";
+
 
 const messageSchema = z.object({
   role: z.enum(["user", "assistant"]),
