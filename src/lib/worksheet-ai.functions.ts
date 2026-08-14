@@ -6,7 +6,7 @@ import { AI_ERROR_AR, callAiGateway, parseJsonLoose, type GatewayMessage } from 
 /**
  * Free unlimited AI worksheet generator.
  * Strictly grounded in the Palestinian curriculum + the uploaded page image (if any).
- * Uses the free Gemini model chain with automatic fallback so students never hit a quota wall.
+ * All gateway concerns (model fallback, retries, timeouts, error codes) live in ai-gateway.ts.
  */
 const inputSchema = z.object({
   lesson: z.string().max(300).optional(),
@@ -17,13 +17,16 @@ const inputSchema = z.object({
 });
 
 const SYSTEM = `أنت معلم فلسطيني خبير معتمد لدى وزارة التربية والتعليم العالي الفلسطينية.
-مهمتك: إنتاج ورقة عمل قابلة للطباعة + مفتاح إجابات نموذجي.
+مهمتك: إنتاج ورقة عمل احترافية قابلة للطباعة + مفتاح إجابات نموذجي.
 
 قيود إلزامية:
 - اعتمد حصريًا على المنهاج الفلسطيني الرسمي وعلى صورة صفحة الكتاب المرفقة إن وُجدت. ممنوع منعًا باتًا استخدام مناهج أو مصادر خارجية.
 - إن كانت هناك صورة: استخرج محتوى الدرس منها حرفيًا واعتمد عليه أولًا.
 - استخدم عربية فصحى تربوية دقيقة بمصطلحات المنهاج (أو الإنجليزية إذا كانت المادة اللغة الإنجليزية).
 - نوّع الأسئلة: اختيار من متعدد، صواب/خطأ، أكمل الفراغ، أسئلة مقالية قصيرة، ومسائل تطبيقية للمواد العلمية.
+- أضف صندوق "نقاط مهمة" (key_notes) من 2 إلى 5 نقاط يجب أن يتذكرها الطالب.
+- أضف نشاطًا عمليًا أو أكثر (activities) قابلًا للتنفيذ داخل الصف أو المنزل.
+- أضف من سؤالين إلى ثلاثة أسئلة تفكير ناقد (critical_thinking).
 - لا تكتب مقدمات ولا خواتيم إنشائية.
 ${VISUAL_PROMPT}
 - يجوز ربط سؤال بمرئية عبر الحقل "visualIndex" (رقم ترتيب المرئية في مصفوفة visuals ابتداءً من 0).
@@ -33,6 +36,9 @@ ${VISUAL_PROMPT}
   "title": "عنوان ورقة العمل",
   "objectives": ["هدف 1", "هدف 2", "هدف 3"],
   "instructions": "تعليمات قصيرة للطالب",
+  "key_notes": ["نقطة مهمة 1"],
+  "activities": ["نشاط تطبيقي 1"],
+  "critical_thinking": ["سؤال تفكير ناقد 1"],
   "visuals": [{ "kind": "table", "title": "...", "caption": "...", "headers": ["..."], "rows": [["..."]] }],
   "questions": [
     { "n": 1, "type": "mcq|truefalse|fill|short|problem", "text": "نص السؤال", "options": ["أ...","ب...","ج...","د..."], "answer": "الإجابة النموذجية", "explanation": "شرح مختصر للحل" }
@@ -40,14 +46,6 @@ ${VISUAL_PROMPT}
 }
 - options تُملأ فقط لأسئلة الاختيار من متعدد، وإلا اجعلها [].
 - كل سؤال يجب أن يحتوي answer صحيحة ودقيقة.`;
-
-const MODELS = [
-  "google/gemini-3-flash-preview",
-  "google/gemini-2.5-flash",
-  "google/gemini-2.5-flash-lite",
-  "google/gemini-2.5-pro",
-];
-
 
 export type WorksheetQuestion = {
   n: number;
@@ -61,16 +59,30 @@ export type GeneratedWorksheet = {
   title: string;
   objectives: string[];
   instructions: string;
+  keyNotes: string[];
+  activities: string[];
+  criticalThinking: string[];
   questions: WorksheetQuestion[];
   visuals: ReturnType<typeof normalizeVisuals>;
 };
 
+type RawSheet = {
+  title?: unknown;
+  objectives?: unknown;
+  instructions?: unknown;
+  key_notes?: unknown;
+  activities?: unknown;
+  critical_thinking?: unknown;
+  visuals?: unknown;
+  questions?: Array<Partial<WorksheetQuestion>>;
+};
+
+const list = (v: unknown, max: number) =>
+  (Array.isArray(v) ? v : []).map((x) => String(x ?? "").trim()).filter(Boolean).slice(0, max);
+
 export const generateWorksheet = createServerFn({ method: "POST" })
   .inputValidator((d) => inputSchema.parse(d))
   .handler(async ({ data }): Promise<{ worksheet: GeneratedWorksheet | null; error: string | null }> => {
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) return { worksheet: null, error: "خدمة الذكاء الاصطناعي غير مفعّلة." };
-
     const gradeName = data.gradeId === 12 ? "الثاني عشر (التوجيهي)" : `الصف ${data.gradeId}`;
     const ask = `المادة: ${data.subject}
 الصف: ${gradeName}
@@ -78,62 +90,52 @@ export const generateWorksheet = createServerFn({ method: "POST" })
 عدد الأسئلة المطلوبة: ${data.count}
 ${data.imageDataUrl ? "اعتمد على صورة صفحة الكتاب المرفقة كمصدر أساسي للمحتوى." : "اعتمد على محتوى هذا الدرس كما ورد في الكتاب المدرسي الفلسطيني الرسمي."}`;
 
-    const content = data.imageDataUrl
-      ? [
-          { type: "text", text: ask },
-          { type: "image_url", image_url: { url: data.imageDataUrl } },
-        ]
-      : ask;
+    const messages: GatewayMessage[] = [
+      { role: "system", content: SYSTEM },
+      {
+        role: "user",
+        content: data.imageDataUrl
+          ? [
+              { type: "text", text: ask },
+              { type: "image_url", image_url: { url: data.imageDataUrl } },
+            ]
+          : ask,
+      },
+    ];
 
-    let lastErr = "";
-    for (const model of MODELS) {
-      try {
-        const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-          body: JSON.stringify({
-            model,
-            messages: [
-              { role: "system", content: SYSTEM },
-              { role: "user", content },
-            ],
-            response_format: { type: "json_object" },
-          }),
-        });
-        if (!res.ok) { lastErr = String(res.status); continue; }
-        const j = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
-        const raw = j.choices?.[0]?.message?.content ?? "";
-        let parsed: Partial<GeneratedWorksheet> & { visuals?: unknown } = {};
-        try { parsed = JSON.parse(raw); }
-        catch {
-          const m = raw.match(/\{[\s\S]*\}/);
-          if (m) { try { parsed = JSON.parse(m[0]); } catch { /* next model */ } }
-        }
-        const questions = (parsed.questions ?? [])
-          .filter((q) => q && typeof q.text === "string" && q.text.trim())
-          .slice(0, data.count)
-          .map((q, i) => ({
-            n: i + 1,
-            type: String(q.type || "short"),
-            text: String(q.text).trim(),
-            options: Array.isArray(q.options) ? q.options.map(String).slice(0, 6) : [],
-            answer: String(q.answer ?? "").trim(),
-            explanation: String(q.explanation ?? "").trim(),
-          }));
-        if (!questions.length) { lastErr = "empty"; continue; }
-        return {
-          worksheet: {
-            title: (parsed.title || data.lesson || `ورقة عمل — ${data.subject}`).toString().trim(),
-            objectives: (parsed.objectives ?? []).map(String).slice(0, 6),
-            instructions: String(parsed.instructions ?? "أجب عن جميع الأسئلة الآتية بخط واضح.").trim(),
-            questions,
-            visuals: normalizeVisuals(parsed.visuals, 4),
-          },
-          error: null,
-        };
-      } catch (e) {
-        lastErr = (e as Error).message;
-      }
-    }
-    return { worksheet: null, error: `الخدمة مشغولة الآن (${lastErr})، حاول مرة أخرى بعد لحظات.` };
+    const res = await callAiGateway(process.env.LOVABLE_API_KEY, {
+      messages,
+      json: true,
+      label: "worksheet",
+      timeoutMs: 120_000,
+    });
+    if (!res.ok) return { worksheet: null, error: AI_ERROR_AR[res.code] };
+
+    const parsed = parseJsonLoose<RawSheet>(res.content) ?? {};
+    const questions = (parsed.questions ?? [])
+      .filter((q) => q && typeof q.text === "string" && q.text.trim())
+      .slice(0, data.count)
+      .map((q, i) => ({
+        n: i + 1,
+        type: String(q.type || "short"),
+        text: String(q.text).trim(),
+        options: Array.isArray(q.options) ? q.options.map(String).slice(0, 6) : [],
+        answer: String(q.answer ?? "").trim(),
+        explanation: String(q.explanation ?? "").trim(),
+      }));
+    if (!questions.length) return { worksheet: null, error: AI_ERROR_AR.empty };
+
+    return {
+      worksheet: {
+        title: String(parsed.title || data.lesson || `ورقة عمل — ${data.subject}`).trim(),
+        objectives: list(parsed.objectives, 6),
+        instructions: String(parsed.instructions ?? "أجب عن جميع الأسئلة الآتية بخط واضح.").trim(),
+        keyNotes: list(parsed.key_notes, 6),
+        activities: list(parsed.activities, 5),
+        criticalThinking: list(parsed.critical_thinking, 4),
+        questions,
+        visuals: normalizeVisuals(parsed.visuals, 4),
+      },
+      error: null,
+    };
   });
