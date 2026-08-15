@@ -191,7 +191,17 @@ export function WorksheetAiTool({ defaultGrade = 9, defaultSubject = "" }: { def
 
             <p className="mt-4 text-sm font-bold">{sheet.instructions}</p>
 
+            {sheet.keyNotes.length > 0 && (
+              <section className="mt-4 rounded-xl border border-gold/40 bg-gold/5 p-4">
+                <h3 className="text-sm font-extrabold">📌 نقاط مهمة</h3>
+                <ul className="mt-2 list-inside list-disc space-y-1 text-sm">
+                  {sheet.keyNotes.map((k, i) => <li key={i}>{k}</li>)}
+                </ul>
+              </section>
+            )}
+
             <EduVisuals visuals={sheet.visuals} />
+
 
             <ol className="mt-4 space-y-5">
               {sheet.questions.map((q) => (
