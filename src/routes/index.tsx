@@ -4,7 +4,10 @@ import {
   BookOpen, Library, PenSquare, Timer, Wand2, ShoppingBag, Gamepad2, ChevronDown, MessagesSquare,
 } from "lucide-react";
 import { PremiumVersesBar } from "@/components/premium-verses-bar";
+import { DailyDateBar } from "@/components/daily-date-bar";
+import { DailyMotivation } from "@/components/daily-motivation";
 import { useI18n } from "@/lib/i18n";
+
 
 export const Route = createFileRoute("/")({
   component: HomePage,
