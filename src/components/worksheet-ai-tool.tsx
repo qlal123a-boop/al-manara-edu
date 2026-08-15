@@ -227,7 +227,31 @@ export function WorksheetAiTool({ defaultGrade = 9, defaultSubject = "" }: { def
                 </li>
               ))}
             </ol>
+
+            {sheet.activities.length > 0 && (
+              <section className="mt-5 rounded-xl bg-secondary p-4">
+                <h3 className="text-sm font-extrabold">🧪 أنشطة تطبيقية</h3>
+                <ol className="mt-2 list-inside list-decimal space-y-1.5 text-sm">
+                  {sheet.activities.map((a, i) => <li key={i}>{a}</li>)}
+                </ol>
+              </section>
+            )}
+
+            {sheet.criticalThinking.length > 0 && (
+              <section className="mt-4 rounded-xl border border-border p-4">
+                <h3 className="text-sm font-extrabold">🧠 أسئلة تفكير ناقد</h3>
+                <ol className="mt-2 list-inside list-decimal space-y-3 text-sm">
+                  {sheet.criticalThinking.map((c, i) => (
+                    <li key={i}>
+                      {c}
+                      <div className="mt-2 h-px w-full bg-border" />
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            )}
           </article>
+
 
           {showAnswers && (
             <article className="mt-6 rounded-2xl border border-gold/40 bg-card p-6 shadow-card">
