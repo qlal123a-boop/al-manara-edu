@@ -88,12 +88,45 @@ function HomePage() {
         </div>
       </section>
 
-      {/* ============ QURAN & QUOTES ============ */}
-      <section className="page-shell relative -mt-8">
+      {/* ============ DATE + MOTIVATION + QURAN ============ */}
+      <section className="page-shell relative -mt-8 space-y-4">
         <div className="reveal-up">
+          <DailyDateBar />
+        </div>
+        <div className="reveal-up" style={{ animationDelay: "80ms" }}>
+          <DailyMotivation />
+        </div>
+        <div className="reveal-up" style={{ animationDelay: "160ms" }}>
           <PremiumVersesBar />
         </div>
       </section>
+
+      {/* ============ SMART ASSISTANT ============ */}
+      <section className="page-shell section-y">
+        <div className="surface-card relative overflow-hidden bg-gradient-royal p-6 text-primary-foreground sm:p-8">
+          <div className="pointer-events-none absolute -left-10 -top-10 h-40 w-40 rounded-full bg-gold/20 blur-3xl" />
+          <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center">
+            <span className="icon-tile h-14 w-14 shrink-0 bg-gradient-gold" style={{ color: "var(--royal-deep)" }}>
+              <Bot className="h-7 w-7" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-xl font-extrabold text-gold sm:text-2xl">المساعد الذكي — روبوت المنارة</h2>
+              <p className="mt-1.5 text-sm leading-relaxed text-primary-foreground/85">
+                اسأل عن أي درس في المنهاج الفلسطيني واحصل على شرح فوري، أو ولّد ملخّصًا أو ورقة عمل جاهزة للطباعة خلال ثوانٍ.
+              </p>
+            </div>
+            <div className="flex shrink-0 flex-wrap gap-2">
+              <Link to="/tutor" className="rounded-xl bg-gradient-gold px-5 py-2.5 text-sm font-extrabold shadow-gold" style={{ color: "var(--royal-deep)" }}>
+                ابدأ المحادثة
+              </Link>
+              <Link to="/summaries" className="rounded-xl border border-gold/50 px-5 py-2.5 text-sm font-extrabold text-gold">
+                ملخّص ذكي
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
 
       {/* ============ SMART AI TOOLS ============ */}
       <section className="page-shell section-y">
