@@ -149,16 +149,35 @@ export function SummaryAiTool() {
 
           {sum.overview && <p className="mt-4 leading-loose text-foreground/90">{sum.overview}</p>}
 
-          <EduVisuals visuals={sum.visuals} />
-
           {sum.keyPoints.length > 0 && (
             <section className="mt-6">
-              <h3 className="text-sm font-extrabold text-gold">النقاط الرئيسية</h3>
+              <h3 className="text-sm font-extrabold text-gold">المفاهيم الأساسية</h3>
               <ul className="mt-2 list-inside list-disc space-y-1.5 text-sm leading-relaxed">
                 {sum.keyPoints.map((k, i) => <li key={i}>{k}</li>)}
               </ul>
             </section>
           )}
+
+          {sum.explanation.length > 0 && (
+            <section className="mt-6">
+              <h3 className="text-sm font-extrabold text-gold">الشرح</h3>
+              <div className="mt-2 space-y-2 text-sm leading-loose">
+                {sum.explanation.map((p, i) => <p key={i}>{p}</p>)}
+              </div>
+            </section>
+          )}
+
+          {sum.notes.length > 0 && (
+            <section className="mt-6 rounded-2xl border border-gold/30 bg-gold/5 p-4">
+              <h3 className="text-sm font-extrabold text-gold">ملاحظات مهمة</h3>
+              <ul className="mt-2 list-inside list-disc space-y-1 text-sm">
+                {sum.notes.map((n, i) => <li key={i}>{n}</li>)}
+              </ul>
+            </section>
+          )}
+
+          <EduVisuals visuals={sum.visuals} />
+
 
           {sum.definitions.length > 0 && (
             <section className="mt-6">
