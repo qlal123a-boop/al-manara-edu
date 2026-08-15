@@ -69,17 +69,46 @@ function buildPrintableClone(node: HTMLElement): HTMLDivElement {
   return wrap;
 }
 
-/** Mount the printable clone offscreen in the main document (fonts available). */
-function mountOffscreen(node: HTMLElement) {
-  const host = document.createElement("div");
-  host.setAttribute("aria-hidden", "true");
-  host.style.cssText = `position:fixed;top:0;left:-10000px;width:${PRINT_WIDTH}px;background:#fff;z-index:-1`;
-  const style = document.createElement("style");
-  style.textContent = PRINT_CSS;
-  const doc = buildPrintableClone(node);
-  host.append(style, doc);
-  document.body.appendChild(host);
-  return { host, doc, cleanup: () => host.remove() };
+/**
+ * Mount the printable clone inside an ISOLATED iframe.
+ * Critical: html2canvas clones the *owner document* including its stylesheets —
+ * the app's stylesheet is full of oklch() which html2canvas cannot parse and it
+ * stalls forever. The iframe carries only the plain-hex PRINT_CSS, so parsing is safe.
+ */
+async function mountFrame(node: HTMLElement, title: string) {
+  const inner = buildPrintableClone(node).outerHTML;
+  const fontFamily = getComputedStyle(document.body).fontFamily.replace(/[<>]/g, "");
+
+  const frame = document.createElement("iframe");
+  frame.setAttribute("aria-hidden", "true");
+  frame.style.cssText = `position:fixed;left:-10000px;top:0;width:${PRINT_WIDTH}px;height:100px;border:0;opacity:0`;
+  document.body.appendChild(frame);
+
+  const idoc = frame.contentDocument!;
+  idoc.open();
+  idoc.write(
+    `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8">` +
+      `<title>${title.replace(/[<>]/g, "")}</title><style>` +
+      `@page{size:A4 portrait;margin:12mm}` +
+      `html,body{margin:0;padding:0;background:#fff;font-family:${fontFamily}}` +
+      PRINT_CSS +
+      `</style></head><body>${inner}</body></html>`,
+  );
+  idoc.close();
+
+  // wait for images + layout
+  await Promise.all(
+    Array.from(idoc.images).map((im) =>
+      im.complete ? Promise.resolve() : new Promise((r) => { im.onload = r; im.onerror = r; }),
+    ),
+  );
+  await new Promise((r) => setTimeout(r, 120));
+
+  const target = idoc.querySelector<HTMLElement>(".mnr-doc")!;
+  frame.style.height = `${Math.max(target.scrollHeight, 100)}px`;
+  await new Promise((r) => setTimeout(r, 60));
+
+  return { frame, idoc, target, cleanup: () => frame.remove() };
 }
 
 async function renderCanvas(el: HTMLElement): Promise<HTMLCanvasElement> {
@@ -92,6 +121,8 @@ async function renderCanvas(el: HTMLElement): Promise<HTMLCanvasElement> {
     imageTimeout: 8000,
     width: PRINT_WIDTH,
     windowWidth: PRINT_WIDTH,
+    height: el.scrollHeight,
+    windowHeight: el.scrollHeight,
   });
 }
 
@@ -131,9 +162,9 @@ export function safeFileName(base: string) {
 
 /** DOWNLOAD ONLY — produces a real multi-page A4 PDF file. Never opens a print dialog. */
 export async function downloadNodeAsPdf(node: HTMLElement, fileBase: string) {
-  const { doc, cleanup } = mountOffscreen(node);
+  const { target, cleanup } = await mountFrame(node, fileBase);
   try {
-    const [canvas, { default: jsPDF }] = await Promise.all([renderCanvas(doc), import("jspdf")]);
+    const [canvas, { default: jsPDF }] = await Promise.all([renderCanvas(target), import("jspdf")]);
     const pages = sliceToA4Pages(canvas);
     const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
     pages.forEach((img, i) => {
@@ -148,37 +179,14 @@ export async function downloadNodeAsPdf(node: HTMLElement, fileBase: string) {
 
 /** PRINT ONLY — opens the print dialog with real selectable RTL text. Downloads nothing. */
 export async function printNode(node: HTMLElement, title: string) {
-  const { doc, cleanup } = mountOffscreen(node);
-  const html = doc.outerHTML;
-  cleanup();
-
-  const fontFamily = getComputedStyle(document.body).fontFamily;
-  const frame = document.createElement("iframe");
-  frame.setAttribute("aria-hidden", "true");
-  frame.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0";
-  document.body.appendChild(frame);
-  const idoc = frame.contentDocument!;
-  idoc.open();
-  idoc.write(
-    `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8">` +
-      `<title>${title.replace(/[<>]/g, "")}</title><style>` +
-      `@page{size:A4 portrait;margin:12mm}` +
-      `html,body{margin:0;padding:0;background:#fff;font-family:${fontFamily.replace(/[<>]/g, "")}}` +
-      `.mnr-doc{width:auto!important;padding:0!important}` +
-      PRINT_CSS +
-      `</style></head><body>${html}</body></html>`,
-  );
-  idoc.close();
-
-  const imgs = Array.from(idoc.images);
-  await Promise.all(
-    imgs.map((im) => (im.complete ? Promise.resolve() : new Promise((r) => { im.onload = r; im.onerror = r; }))),
-  );
-  await new Promise((r) => setTimeout(r, 150));
+  const { frame, idoc, cleanup } = await mountFrame(node, title);
+  const doc = idoc.querySelector<HTMLElement>(".mnr-doc");
+  if (doc) { doc.style.width = "auto"; doc.style.padding = "0"; }
   try {
     frame.contentWindow?.focus();
     frame.contentWindow?.print();
   } finally {
-    setTimeout(() => frame.remove(), 2000);
+    setTimeout(cleanup, 2000);
   }
 }
+
