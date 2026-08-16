@@ -6,6 +6,8 @@ import { ImagePlus, Loader2, Printer, Sparkles, X, Eye, EyeOff, Download } from 
 import { toast } from "sonner";
 import { EduVisuals } from "@/components/edu-visual";
 import { downloadNodeAsPdf, printNode } from "@/lib/doc-export";
+import { generateEduImage } from "@/lib/edu-image.functions";
+import { EduLessonImage } from "@/components/edu-lesson-image";
 
 const TYPE_LABEL: Record<string, string> = {
   mcq: "اختيار من متعدد",
@@ -18,6 +20,7 @@ const TYPE_LABEL: Record<string, string> = {
 /** AI worksheet generator — lives inside the Worksheets section. */
 export function WorksheetAiTool({ defaultGrade = 9, defaultSubject = "" }: { defaultGrade?: number; defaultSubject?: string }) {
   const run = useServerFn(generateWorksheet);
+  const runImage = useServerFn(generateEduImage);
   const fileRef = useRef<HTMLInputElement>(null);
   const docRef = useRef<HTMLDivElement>(null);
 
@@ -30,6 +33,8 @@ export function WorksheetAiTool({ defaultGrade = 9, defaultSubject = "" }: { def
   const [sheet, setSheet] = useState<GeneratedWorksheet | null>(null);
   const [showAnswers, setShowAnswers] = useState(false);
   const [exporting, setExporting] = useState<"pdf" | "print" | null>(null);
+  const [eduImg, setEduImg] = useState<string | null>(null);
+  const [imgLoading, setImgLoading] = useState(false);
 
   /** DOWNLOAD ONLY — never opens the print dialog. */
   const handleDownload = async () => {
@@ -64,10 +69,20 @@ export function WorksheetAiTool({ defaultGrade = 9, defaultSubject = "" }: { def
   const submit = async () => {
     if (!subject) { toast.error("اختر المادة أولًا"); return; }
     if (!lesson.trim() && !image) { toast.error("اكتب اسم الدرس أو ارفع صورة من الكتاب"); return; }
-    setLoading(true); setSheet(null); setShowAnswers(false);
+    setLoading(true); setSheet(null); setShowAnswers(false); setEduImg(null);
     try {
       const res = await run({ data: { gradeId, subject, lesson: lesson.trim() || undefined, count, imageDataUrl: image ?? undefined } });
-      if (res.worksheet) setSheet(res.worksheet);
+      if (res.worksheet) {
+        setSheet(res.worksheet);
+        const topic = res.worksheet.title || lesson.trim();
+        if (topic) {
+          setImgLoading(true);
+          runImage({ data: { topic, subject, gradeId } })
+            .then((r) => setEduImg(r.imageDataUrl))
+            .catch(() => setEduImg(null))
+            .finally(() => setImgLoading(false));
+        }
+      }
       else toast.error(res.error || "تعذّر التوليد");
     } catch {
       toast.error("تعذّر الاتصال بالخدمة، حاول مرة أخرى");
@@ -199,6 +214,8 @@ export function WorksheetAiTool({ defaultGrade = 9, defaultSubject = "" }: { def
                 </ul>
               </section>
             )}
+
+            <EduLessonImage src={eduImg} loading={imgLoading} title={sheet.title} />
 
             <EduVisuals visuals={sheet.visuals} />
 

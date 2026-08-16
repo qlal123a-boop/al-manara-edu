@@ -111,20 +111,74 @@ async function mountFrame(node: HTMLElement, title: string) {
   return { frame, idoc, target, cleanup: () => frame.remove() };
 }
 
-async function renderCanvas(el: HTMLElement): Promise<HTMLCanvasElement> {
-  const { default: html2canvas } = await import("html2canvas");
-  return html2canvas(el, {
-    scale: 2,
-    backgroundColor: "#ffffff",
-    useCORS: true,
-    logging: false,
-    imageTimeout: 8000,
-    width: PRINT_WIDTH,
-    windowWidth: PRINT_WIDTH,
-    height: el.scrollHeight,
-    windowHeight: el.scrollHeight,
+/**
+ * Rasterize with the BROWSER's own text engine via an SVG <foreignObject>.
+ * html2canvas re-lays-out text glyph-by-glyph, which destroys Arabic shaping
+ * (letters get disconnected and words stick together). Rendering the markup
+ * through an SVG image keeps real Arabic shaping, word spacing and RTL.
+ * html2canvas stays only as a last-resort fallback.
+ */
+async function renderViaSvg(el: HTMLElement, idoc: Document): Promise<HTMLCanvasElement> {
+  const clone = el.cloneNode(true) as HTMLElement;
+  clone.setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
+  const fontFamily = getComputedStyle(document.body).fontFamily.replace(/[<>&]/g, "");
+  const css =
+    `html,body{margin:0;padding:0}` +
+    `div{font-family:${fontFamily},"Noto Naskh Arabic","Amiri","Segoe UI",sans-serif}` +
+    PRINT_CSS;
+
+  const style = idoc.createElement("style");
+  style.textContent = css;
+  clone.insertBefore(style, clone.firstChild);
+
+  const body = new XMLSerializer().serializeToString(clone);
+  const width = PRINT_WIDTH;
+  const height = Math.max(el.scrollHeight, 100);
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">` +
+    `<foreignObject x="0" y="0" width="${width}" height="${height}">${body}</foreignObject></svg>`;
+
+  const img = new Image();
+  img.decoding = "sync";
+  await new Promise<void>((resolve, reject) => {
+    img.onload = () => resolve();
+    img.onerror = () => reject(new Error("svg render failed"));
+    img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
   });
+
+  const scale = 2;
+  const canvas = document.createElement("canvas");
+  canvas.width = width * scale;
+  canvas.height = height * scale;
+  const ctx = canvas.getContext("2d")!;
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  // Throws if the canvas got tainted → caller falls back to html2canvas.
+  canvas.toDataURL("image/jpeg", 0.5);
+  return canvas;
 }
+
+async function renderCanvas(el: HTMLElement, idoc: Document): Promise<HTMLCanvasElement> {
+  try {
+    return await renderViaSvg(el, idoc);
+  } catch (e) {
+    console.warn("[doc-export] SVG render failed, falling back to html2canvas", e);
+    const { default: html2canvas } = await import("html2canvas");
+    return html2canvas(el, {
+      scale: 2,
+      backgroundColor: "#ffffff",
+      useCORS: true,
+      logging: false,
+      imageTimeout: 8000,
+      width: PRINT_WIDTH,
+      windowWidth: PRINT_WIDTH,
+      height: el.scrollHeight,
+      windowHeight: el.scrollHeight,
+    });
+  }
+}
+
 
 /** Slice one tall canvas into A4-proportioned page images. */
 function sliceToA4Pages(canvas: HTMLCanvasElement): string[] {
@@ -162,9 +216,10 @@ export function safeFileName(base: string) {
 
 /** DOWNLOAD ONLY — produces a real multi-page A4 PDF file. Never opens a print dialog. */
 export async function downloadNodeAsPdf(node: HTMLElement, fileBase: string) {
-  const { target, cleanup } = await mountFrame(node, fileBase);
+  const { target, idoc, cleanup } = await mountFrame(node, fileBase);
   try {
-    const [canvas, { default: jsPDF }] = await Promise.all([renderCanvas(target), import("jspdf")]);
+    const [canvas, { default: jsPDF }] = await Promise.all([renderCanvas(target, idoc), import("jspdf")]);
+
     const pages = sliceToA4Pages(canvas);
     const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
     pages.forEach((img, i) => {
