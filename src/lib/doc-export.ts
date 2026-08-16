@@ -216,9 +216,10 @@ export function safeFileName(base: string) {
 
 /** DOWNLOAD ONLY — produces a real multi-page A4 PDF file. Never opens a print dialog. */
 export async function downloadNodeAsPdf(node: HTMLElement, fileBase: string) {
-  const { target, cleanup } = await mountFrame(node, fileBase);
+  const { target, idoc, cleanup } = await mountFrame(node, fileBase);
   try {
-    const [canvas, { default: jsPDF }] = await Promise.all([renderCanvas(target), import("jspdf")]);
+    const [canvas, { default: jsPDF }] = await Promise.all([renderCanvas(target, idoc), import("jspdf")]);
+
     const pages = sliceToA4Pages(canvas);
     const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
     pages.forEach((img, i) => {
