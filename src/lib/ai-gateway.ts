@@ -156,3 +156,59 @@ export function parseJsonLoose<T>(raw: string): T | null {
     }
   }
 }
+
+/**
+ * Image generation through the same gateway (Gemini image models).
+ * Returns a data: URL (base64 PNG) so it can be embedded directly in the
+ * printable document without any external network fetch at export time.
+ */
+export async function generateGatewayImage(
+  apiKey: string | undefined,
+  prompt: string,
+  opts: { timeoutMs?: number; label?: string } = {},
+): Promise<{ ok: true; dataUrl: string } | { ok: false; code: AiErrorCode; detail: string }> {
+  if (!apiKey) return { ok: false, code: "no_key", detail: "LOVABLE_API_KEY missing" };
+  const models = ["google/gemini-2.5-flash-image", "google/gemini-3-pro-image-preview"];
+  const timeoutMs = opts.timeoutMs ?? 90_000;
+  const label = opts.label ?? "edu-image";
+  let lastCode: AiErrorCode = "unavailable";
+  let lastDetail = "";
+
+  for (const model of models) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+        signal: controller.signal,
+        body: JSON.stringify({
+          model,
+          messages: [{ role: "user", content: prompt }],
+          modalities: ["image", "text"],
+        }),
+      });
+      if (!res.ok) {
+        lastCode = codeForStatus(res.status);
+        lastDetail = `${model} → HTTP ${res.status} ${(await res.text().catch(() => "")).slice(0, 300)}`;
+        console.error(`[${label}]`, lastDetail);
+        continue;
+      }
+      const json = (await res.json()) as {
+        choices?: Array<{ message?: { images?: Array<{ image_url?: { url?: string } }> } }>;
+      };
+      const url = json.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+      if (url?.startsWith("data:image/")) return { ok: true, dataUrl: url };
+      lastCode = "empty";
+      lastDetail = `${model} → no image in response`;
+      console.error(`[${label}]`, lastDetail);
+    } catch (e) {
+      lastCode = (e as Error)?.name === "AbortError" ? "timeout" : "unavailable";
+      lastDetail = `${model} → ${(e as Error).message}`;
+      console.error(`[${label}]`, lastDetail);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  return { ok: false, code: lastCode, detail: lastDetail };
+}
