@@ -6,6 +6,8 @@ import { ImagePlus, Loader2, Printer, Sparkles, X, Download } from "lucide-react
 import { toast } from "sonner";
 import { EduVisuals } from "@/components/edu-visual";
 import { downloadNodeAsPdf, printNode } from "@/lib/doc-export";
+import { generateEduImage } from "@/lib/edu-image.functions";
+import { EduLessonImage } from "@/components/edu-lesson-image";
 
 /** AI summary generator — lives inside the Summaries section. */
 export function SummaryAiTool() {

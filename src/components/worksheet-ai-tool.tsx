@@ -6,6 +6,8 @@ import { ImagePlus, Loader2, Printer, Sparkles, X, Eye, EyeOff, Download } from 
 import { toast } from "sonner";
 import { EduVisuals } from "@/components/edu-visual";
 import { downloadNodeAsPdf, printNode } from "@/lib/doc-export";
+import { generateEduImage } from "@/lib/edu-image.functions";
+import { EduLessonImage } from "@/components/edu-lesson-image";
 
 const TYPE_LABEL: Record<string, string> = {
   mcq: "اختيار من متعدد",
