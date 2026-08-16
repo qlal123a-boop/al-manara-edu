@@ -12,6 +12,7 @@ import { EduLessonImage } from "@/components/edu-lesson-image";
 /** AI summary generator — lives inside the Summaries section. */
 export function SummaryAiTool() {
   const run = useServerFn(generateSummary);
+  const runImage = useServerFn(generateEduImage);
   const fileRef = useRef<HTMLInputElement>(null);
   const docRef = useRef<HTMLElement>(null);
 
@@ -22,6 +23,8 @@ export function SummaryAiTool() {
   const [loading, setLoading] = useState(false);
   const [sum, setSum] = useState<GeneratedSummary | null>(null);
   const [exporting, setExporting] = useState<"pdf" | "print" | null>(null);
+  const [eduImg, setEduImg] = useState<string | null>(null);
+  const [imgLoading, setImgLoading] = useState(false);
 
   /** DOWNLOAD ONLY — never opens the print dialog. */
   const handleDownload = async () => {
@@ -56,10 +59,20 @@ export function SummaryAiTool() {
   const submit = async () => {
     if (!subject) { toast.error("اختر المادة أولًا"); return; }
     if (!lesson.trim() && !image) { toast.error("اكتب اسم الدرس أو ارفع صورة من الكتاب"); return; }
-    setLoading(true); setSum(null);
+    setLoading(true); setSum(null); setEduImg(null);
     try {
       const res = await run({ data: { gradeId, subject, lesson: lesson.trim() || undefined, imageDataUrl: image ?? undefined } });
-      if (res.summary) setSum(res.summary);
+      if (res.summary) {
+        setSum(res.summary);
+        const topic = res.summary.title || lesson.trim();
+        if (topic) {
+          setImgLoading(true);
+          runImage({ data: { topic, subject, gradeId } })
+            .then((r) => setEduImg(r.imageDataUrl))
+            .catch(() => setEduImg(null))
+            .finally(() => setImgLoading(false));
+        }
+      }
       else toast.error(res.error || "تعذّر التوليد");
     } catch {
       toast.error("تعذّر الاتصال بالخدمة، حاول مرة أخرى");
@@ -150,6 +163,8 @@ export function SummaryAiTool() {
           <div className="gold-divider mt-4 w-24" />
 
           {sum.overview && <p className="mt-4 leading-loose text-foreground/90">{sum.overview}</p>}
+
+          <EduLessonImage src={eduImg} loading={imgLoading} title={sum.title} />
 
           {sum.keyPoints.length > 0 && (
             <section className="mt-6">
