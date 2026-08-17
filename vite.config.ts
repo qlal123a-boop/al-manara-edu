@@ -6,7 +6,20 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
+// Bolt sandbox detection — the lovable config checks for this env var to enable
+// sandbox mode (forces port 8080, enables dev-server-bridge for preview). Set it
+// here so it's present before the config plugin evaluates.
+process.env.LOVABLE_SANDBOX = process.env.LOVABLE_SANDBOX ?? "1";
+
 export default defineConfig({
+  // Explicitly bind the dev server to 0.0.0.0:8080 so Bolt can detect and proxy it.
+  vite: {
+    server: {
+      host: "0.0.0.0",
+      port: 8080,
+      strictPort: true,
+    },
+  },
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
