@@ -1,28 +1,62 @@
-// @lovable.dev/vite-tanstack-config already includes the following — do NOT add them manually
-// or the app will break with duplicate plugins:
-//   - TanStack devtools (dev-only, first), tanstackStart, viteReact, tailwindcss, tsConfigPaths,
-//     nitro (build-only using cloudflare as a default target), VITE_* env injection, @ path alias,
-//     React/TanStack dedupe, error logger plugins, and sandbox detection (port/host/strictPort).
-// You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
-import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+import { defineConfig, loadEnv } from "vite";
+import tailwindcss from "@tailwindcss/vite";
+import react from "@vitejs/plugin-react";
+import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 
-// Bolt sandbox detection — the lovable config checks for this env var to enable
-// sandbox mode (forces port 8080, enables dev-server-bridge for preview). Set it
-// here so it's present before the config plugin evaluates.
-process.env.LOVABLE_SANDBOX = process.env.LOVABLE_SANDBOX ?? "1";
-
+// Native Bolt config — replaces the Lovable sandbox wrapper.
+// The Lovable config forced port 8080 and injected editor-only plugins
+// (dev-server-bridge, hmr-gate, assets-proxy) that interfered with Bolt's
+// preview proxy. This loads only the standard plugins the app needs.
+//
+// Plugin order matters: tanstackStart (which registers the router plugin)
+// MUST come before the React JSX transform plugin.
 export default defineConfig({
-  // Explicitly bind the dev server to 0.0.0.0:8080 so Bolt can detect and proxy it.
-  vite: {
-    server: {
-      host: "0.0.0.0",
-      port: 8080,
-      strictPort: true,
-    },
+  plugins: [
+    tailwindcss(),
+    tanstackStart({
+      server: { entry: "server" },
+      importProtection: {
+        behavior: "error",
+        client: {
+          files: ["**/server/**"],
+          specifiers: ["server-only"],
+        },
+      },
+    }),
+    react(),
+  ],
+  resolve: {
+    tsconfigPaths: true,
+    dedupe: [
+      "react",
+      "react-dom",
+      "react/jsx-runtime",
+      "react/jsx-dev-runtime",
+      "@tanstack/react-query",
+      "@tanstack/query-core",
+    ],
   },
-  tanstackStart: {
-    // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
-    // nitro/vite builds from this
-    server: { entry: "server" },
+  optimizeDeps: {
+    include: [
+      "react",
+      "react-dom",
+      "react-dom/client",
+      "react/jsx-runtime",
+      "react/jsx-dev-runtime",
+    ],
+    ignoreOutdatedRequests: true,
   },
+  server: {
+    host: "0.0.0.0",
+    port: 8080,
+    strictPort: true,
+  },
+  define: (() => {
+    const loadedEnv = loadEnv(process.env.NODE_ENV ?? "development", process.cwd(), "VITE_");
+    const envDefine: Record<string, string> = {};
+    for (const [key, value] of Object.entries(loadedEnv)) {
+      envDefine[`import.meta.env.${key}`] = JSON.stringify(value);
+    }
+    return envDefine;
+  })(),
 });
