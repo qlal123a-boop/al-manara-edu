@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_sections: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          image_url: string | null
+          position: number
+          public_visible: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          position?: number
+          public_visible?: boolean
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          position?: number
+          public_visible?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       channels: {
         Row: {
           created_at: string
