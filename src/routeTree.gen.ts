@@ -23,6 +23,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as ModeratorRequestRouteImport } from './routes/moderator-request'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as PomodoroRouteImport } from './routes/pomodoro'
+import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as QuizGeneratorRouteImport } from './routes/quiz-generator'
 import { Route as ScheduleRouteImport } from './routes/schedule'
 import { Route as SmartBoardRouteImport } from './routes/smart-board'
@@ -106,6 +107,11 @@ const PomodoroRoute = PomodoroRouteImport.update({
   path: '/pomodoro',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const QuizGeneratorRoute = QuizGeneratorRouteImport.update({
   id: '/quiz-generator',
   path: '/quiz-generator',
@@ -183,6 +189,7 @@ export interface FileRoutesByFullPath {
   '/moderator-request': typeof ModeratorRequestRoute
   '/onboarding': typeof OnboardingRoute
   '/pomodoro': typeof PomodoroRoute
+  '/pricing': typeof PricingRoute
   '/quiz-generator': typeof QuizGeneratorRoute
   '/schedule': typeof ScheduleRoute
   '/smart-board': typeof SmartBoardRoute
@@ -210,6 +217,7 @@ export interface FileRoutesByTo {
   '/moderator-request': typeof ModeratorRequestRoute
   '/onboarding': typeof OnboardingRoute
   '/pomodoro': typeof PomodoroRoute
+  '/pricing': typeof PricingRoute
   '/quiz-generator': typeof QuizGeneratorRoute
   '/schedule': typeof ScheduleRoute
   '/smart-board': typeof SmartBoardRoute
@@ -239,6 +247,7 @@ export interface FileRoutesById {
   '/moderator-request': typeof ModeratorRequestRoute
   '/onboarding': typeof OnboardingRoute
   '/pomodoro': typeof PomodoroRoute
+  '/pricing': typeof PricingRoute
   '/quiz-generator': typeof QuizGeneratorRoute
   '/schedule': typeof ScheduleRoute
   '/smart-board': typeof SmartBoardRoute
@@ -269,6 +278,7 @@ export interface FileRouteTypes {
     | '/moderator-request'
     | '/onboarding'
     | '/pomodoro'
+    | '/pricing'
     | '/quiz-generator'
     | '/schedule'
     | '/smart-board'
@@ -296,6 +306,7 @@ export interface FileRouteTypes {
     | '/moderator-request'
     | '/onboarding'
     | '/pomodoro'
+    | '/pricing'
     | '/quiz-generator'
     | '/schedule'
     | '/smart-board'
@@ -324,6 +335,7 @@ export interface FileRouteTypes {
     | '/moderator-request'
     | '/onboarding'
     | '/pomodoro'
+    | '/pricing'
     | '/quiz-generator'
     | '/schedule'
     | '/smart-board'
@@ -353,6 +365,7 @@ export interface RootRouteChildren {
   ModeratorRequestRoute: typeof ModeratorRequestRoute
   OnboardingRoute: typeof OnboardingRoute
   PomodoroRoute: typeof PomodoroRoute
+  PricingRoute: typeof PricingRoute
   QuizGeneratorRoute: typeof QuizGeneratorRoute
   ScheduleRoute: typeof ScheduleRoute
   SmartBoardRoute: typeof SmartBoardRoute
@@ -462,6 +475,13 @@ declare module '@tanstack/react-router' {
       path: '/pomodoro'
       fullPath: '/pomodoro'
       preLoaderRoute: typeof PomodoroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/quiz-generator': {
@@ -581,6 +601,7 @@ const rootRouteChildren: RootRouteChildren = {
   ModeratorRequestRoute: ModeratorRequestRoute,
   OnboardingRoute: OnboardingRoute,
   PomodoroRoute: PomodoroRoute,
+  PricingRoute: PricingRoute,
   QuizGeneratorRoute: QuizGeneratorRoute,
   ScheduleRoute: ScheduleRoute,
   SmartBoardRoute: SmartBoardRoute,
