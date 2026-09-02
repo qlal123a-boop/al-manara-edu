@@ -21,6 +21,7 @@ import { Route as GradesRouteImport } from './routes/grades'
 import { Route as LibraryRouteImport } from './routes/library'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ModeratorRequestRouteImport } from './routes/moderator-request'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as PomodoroRouteImport } from './routes/pomodoro'
 import { Route as QuizGeneratorRouteImport } from './routes/quiz-generator'
 import { Route as ScheduleRouteImport } from './routes/schedule'
@@ -93,6 +94,11 @@ const LoginRoute = LoginRouteImport.update({
 const ModeratorRequestRoute = ModeratorRequestRouteImport.update({
   id: '/moderator-request',
   path: '/moderator-request',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PomodoroRoute = PomodoroRouteImport.update({
@@ -175,6 +181,7 @@ export interface FileRoutesByFullPath {
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
   '/moderator-request': typeof ModeratorRequestRoute
+  '/onboarding': typeof OnboardingRoute
   '/pomodoro': typeof PomodoroRoute
   '/quiz-generator': typeof QuizGeneratorRoute
   '/schedule': typeof ScheduleRoute
@@ -201,6 +208,7 @@ export interface FileRoutesByTo {
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
   '/moderator-request': typeof ModeratorRequestRoute
+  '/onboarding': typeof OnboardingRoute
   '/pomodoro': typeof PomodoroRoute
   '/quiz-generator': typeof QuizGeneratorRoute
   '/schedule': typeof ScheduleRoute
@@ -229,6 +237,7 @@ export interface FileRoutesById {
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
   '/moderator-request': typeof ModeratorRequestRoute
+  '/onboarding': typeof OnboardingRoute
   '/pomodoro': typeof PomodoroRoute
   '/quiz-generator': typeof QuizGeneratorRoute
   '/schedule': typeof ScheduleRoute
@@ -258,6 +267,7 @@ export interface FileRouteTypes {
     | '/library'
     | '/login'
     | '/moderator-request'
+    | '/onboarding'
     | '/pomodoro'
     | '/quiz-generator'
     | '/schedule'
@@ -284,6 +294,7 @@ export interface FileRouteTypes {
     | '/library'
     | '/login'
     | '/moderator-request'
+    | '/onboarding'
     | '/pomodoro'
     | '/quiz-generator'
     | '/schedule'
@@ -311,6 +322,7 @@ export interface FileRouteTypes {
     | '/library'
     | '/login'
     | '/moderator-request'
+    | '/onboarding'
     | '/pomodoro'
     | '/quiz-generator'
     | '/schedule'
@@ -339,6 +351,7 @@ export interface RootRouteChildren {
   LibraryRoute: typeof LibraryRoute
   LoginRoute: typeof LoginRoute
   ModeratorRequestRoute: typeof ModeratorRequestRoute
+  OnboardingRoute: typeof OnboardingRoute
   PomodoroRoute: typeof PomodoroRoute
   QuizGeneratorRoute: typeof QuizGeneratorRoute
   ScheduleRoute: typeof ScheduleRoute
@@ -435,6 +448,13 @@ declare module '@tanstack/react-router' {
       path: '/moderator-request'
       fullPath: '/moderator-request'
       preLoaderRoute: typeof ModeratorRequestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pomodoro': {
@@ -559,6 +579,7 @@ const rootRouteChildren: RootRouteChildren = {
   LibraryRoute: LibraryRoute,
   LoginRoute: LoginRoute,
   ModeratorRequestRoute: ModeratorRequestRoute,
+  OnboardingRoute: OnboardingRoute,
   PomodoroRoute: PomodoroRoute,
   QuizGeneratorRoute: QuizGeneratorRoute,
   ScheduleRoute: ScheduleRoute,

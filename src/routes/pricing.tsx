@@ -1,0 +1,211 @@
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
+import {
+  BadgeCheck,
+  Bot,
+  Check,
+  Crown,
+  Download,
+  Gauge,
+  Infinity as InfinityIcon,
+  Loader2,
+  Palette,
+  Sparkles,
+  X,
+} from "lucide-react";
+import { toast } from "sonner";
+import { useProfile } from "@/lib/profile";
+import { useAuthUser } from "@/lib/use-auth";
+
+export const Route = createFileRoute("/pricing")({
+  component: PricingPage,
+  head: () => ({
+    meta: [
+      { title: "خطط الاشتراك — المنارة التعليمية" },
+      {
+        name: "description",
+        content: "اختر خطتك في المنارة: خطة مجانية بأدوات أساسية، أو منارة بلس بدولار واحد شهريًا لمساعد ذكي غير محدود ولوح ذكي احترافي.",
+      },
+      { property: "og:title", content: "خطط الاشتراك — المنارة التعليمية" },
+      { property: "og:description", content: "خطة مجانية أو منارة بلس بـ 1$ شهريًا: مساعد ذكي بلا حدود، مستشار دراسي، ولوح ذكي احترافي." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
+});
+
+const FREE_FEATURES = [
+  { label: "المساعد الذكي — ٥ أسئلة يوميًا", ok: true },
+  { label: "المستشار الدراسي — محادثة أساسية", ok: true },
+  { label: "اللوح الذكي — قلم وألوان أساسية", ok: true },
+  { label: "الملخصات وأوراق العمل — عدد محدود يوميًا", ok: true },
+  { label: "المكتبة والدروس والقنوات التعليمية", ok: true },
+  { label: "تنزيل PDF غير محدود", ok: false },
+  { label: "تشخيص متقدّم ومتابعة مستمرة", ok: false },
+  { label: "اللوح الذكي Pro (ملء الشاشة والفرش المتقدمة)", ok: false },
+];
+
+const PRO_FEATURES = [
+  "المساعد الذكي بلا حدود — أسئلة غير محدودة",
+  "المستشار الدراسي الكامل: تشخيص المشكلات ومتابعة مستمرة",
+  "اللوح الذكي Pro: ملء الشاشة، فرش متقدمة، منتقي ألوان مخصّص",
+  "توليد ملخصات وأوراق عمل واختبارات بلا حدود",
+  "تنزيل وطباعة PDF بلا حدود",
+  "صور ورسوم تعليمية مولّدة تلقائيًا حسب الدرس",
+  "أولوية في السرعة ودعم أسرع",
+  "شهادات إتمام بتصاميم مميّزة",
+];
+
+function PricingPage() {
+  const navigate = useNavigate();
+  const { user } = useAuthUser();
+  const { profile, plan, update } = useProfile();
+  const [busy, setBusy] = useState<"free" | "pro" | null>(null);
+
+  const choose = async (next: "free" | "pro") => {
+    if (!user) {
+      toast.info("سجّل دخولك أولًا لاختيار الخطة");
+      navigate({ to: "/login" });
+      return;
+    }
+    setBusy(next);
+    try {
+      await update.mutateAsync({
+        plan: next,
+        onboarded: true,
+        plan_started_at: next === "pro" ? new Date().toISOString() : null,
+      });
+      toast.success(next === "pro" ? "تم تفعيل «منارة بلس» 🎉" : "تم المتابعة بالخطة المجانية");
+      navigate({ to: "/" });
+    } catch {
+      toast.error("تعذّر حفظ الخطة، حاول مجددًا");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <div className="page-shell py-10 md:py-16">
+      <header className="mx-auto max-w-2xl text-center">
+        <span className="inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/10 px-4 py-1.5 text-xs font-bold text-gold">
+          <Sparkles className="h-3.5 w-3.5" /> {profile && !profile.onboarded ? "الخطوة ٢ من ٢" : "خطط الاشتراك"}
+        </span>
+        <h1 className="mt-4 text-3xl font-extrabold md:text-5xl">اختر خطتك المناسبة</h1>
+        <p className="mt-3 text-sm text-muted-foreground md:text-base">
+          ابدأ مجانًا اليوم، أو افتح كل أدوات المنارة الذكية بأقل من فنجان قهوة شهريًا.
+        </p>
+        <div className="gold-divider mx-auto mt-5 w-24" />
+      </header>
+
+      <div className="mx-auto mt-10 grid max-w-5xl gap-6 lg:grid-cols-2">
+        {/* Free */}
+        <section className="relative flex flex-col rounded-3xl border border-border bg-card p-6 shadow-card md:p-8">
+          <div className="flex items-center gap-3">
+            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-secondary">
+              <Gauge className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <div>
+              <h2 className="text-xl font-extrabold">الخطة المجانية</h2>
+              <p className="text-xs text-muted-foreground">للبداية واستكشاف المنصة</p>
+            </div>
+          </div>
+
+          <div className="mt-6 flex items-end gap-2">
+            <span className="text-5xl font-extrabold">$0</span>
+            <span className="pb-2 text-sm text-muted-foreground">/ شهريًا</span>
+          </div>
+
+          <ul className="mt-6 flex-1 space-y-3 text-sm">
+            {FREE_FEATURES.map((f) => (
+              <li key={f.label} className="flex items-start gap-2.5">
+                <span
+                  className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full ${
+                    f.ok ? "bg-emerald-500/15 text-emerald-600" : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {f.ok ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
+                </span>
+                <span className={f.ok ? "" : "text-muted-foreground line-through"}>{f.label}</span>
+              </li>
+            ))}
+          </ul>
+
+          <button
+            onClick={() => choose("free")}
+            disabled={busy !== null}
+            className="mt-7 inline-flex items-center justify-center gap-2 rounded-xl border border-border py-3.5 text-sm font-extrabold transition-smooth hover:border-gold disabled:opacity-60"
+          >
+            {busy === "free" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            متابعة بالمجاني
+          </button>
+          {plan === "free" && profile?.onboarded && (
+            <p className="mt-3 text-center text-xs font-bold text-muted-foreground">خطتك الحالية</p>
+          )}
+        </section>
+
+        {/* Pro */}
+        <section className="relative flex flex-col overflow-hidden rounded-3xl border-2 border-gold bg-gradient-royal p-6 text-primary-foreground shadow-luxury md:p-8">
+          <span className="absolute end-6 top-6 rounded-full bg-gradient-gold px-3 py-1 text-[11px] font-extrabold" style={{ color: "var(--royal-deep)" }}>
+            الأكثر اختيارًا
+          </span>
+          <div className="flex items-center gap-3">
+            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-gold" style={{ color: "var(--royal-deep)" }}>
+              <Crown className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-xl font-extrabold text-gold">منارة بلس</h2>
+              <p className="text-xs text-primary-foreground/70">لكل طالب يريد التفوّق فعلًا</p>
+            </div>
+          </div>
+
+          <div className="mt-6 flex items-end gap-2">
+            <span className="text-5xl font-extrabold text-gold">$1</span>
+            <span className="pb-2 text-sm text-primary-foreground/70">/ شهريًا</span>
+          </div>
+
+          <ul className="mt-6 flex-1 space-y-3 text-sm">
+            {PRO_FEATURES.map((f) => (
+              <li key={f} className="flex items-start gap-2.5">
+                <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-gold/20 text-gold">
+                  <Check className="h-3.5 w-3.5" />
+                </span>
+                <span>{f}</span>
+              </li>
+            ))}
+          </ul>
+
+          <div className="mt-6 grid grid-cols-3 gap-2 text-center text-[11px] font-bold text-primary-foreground/80">
+            <div className="rounded-xl border border-gold/30 bg-white/5 p-2">
+              <Bot className="mx-auto mb-1 h-4 w-4 text-gold" /> مساعد ذكي
+            </div>
+            <div className="rounded-xl border border-gold/30 bg-white/5 p-2">
+              <Palette className="mx-auto mb-1 h-4 w-4 text-gold" /> لوح Pro
+            </div>
+            <div className="rounded-xl border border-gold/30 bg-white/5 p-2">
+              <Download className="mx-auto mb-1 h-4 w-4 text-gold" /> PDF بلا حدود
+            </div>
+          </div>
+
+          <button
+            onClick={() => choose("pro")}
+            disabled={busy !== null}
+            className="mt-7 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-gold py-3.5 text-sm font-extrabold shadow-gold transition-smooth hover:scale-[1.01] disabled:opacity-60"
+            style={{ color: "var(--royal-deep)" }}
+          >
+            {busy === "pro" ? <Loader2 className="h-4 w-4 animate-spin" /> : <InfinityIcon className="h-4 w-4" />}
+            اشترك الآن
+          </button>
+          {plan === "pro" && (
+            <p className="mt-3 inline-flex items-center justify-center gap-1.5 text-center text-xs font-bold text-gold">
+              <BadgeCheck className="h-4 w-4" /> اشتراكك فعّال
+            </p>
+          )}
+        </section>
+      </div>
+
+      <p className="mx-auto mt-8 max-w-2xl text-center text-xs text-muted-foreground">
+        يمكنك تغيير خطتك في أي وقت من هذه الصفحة. الأسعار بالدولار الأمريكي وتشمل جميع التحديثات القادمة.
+      </p>
+    </div>
+  );
+}
