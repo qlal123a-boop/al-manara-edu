@@ -439,6 +439,45 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          ai_usage_count: number
+          ai_usage_date: string
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          onboarded: boolean
+          plan: string
+          plan_started_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          ai_usage_count?: number
+          ai_usage_date?: string
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id: string
+          onboarded?: boolean
+          plan?: string
+          plan_started_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ai_usage_count?: number
+          ai_usage_date?: string
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          onboarded?: boolean
+          plan?: string
+          plan_started_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       purchases: {
         Row: {
           created_at: string
@@ -671,6 +710,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      consume_ai_quota: { Args: { _limit?: number }; Returns: Json }
       get_registered_user_count: { Args: never; Returns: number }
       get_user_points: { Args: { _user_id: string }; Returns: number }
       has_role: {
