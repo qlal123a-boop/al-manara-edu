@@ -707,15 +707,7 @@ export type Database = {
       }
     }
     Views: {
-      game_leaderboard: {
-        Row: {
-          created_at: string | null
-          display_name: string | null
-          game: string | null
-          score: number | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       consume_ai_quota: { Args: { _limit?: number }; Returns: Json }
