@@ -35,7 +35,7 @@ function GamesPage() {
   const [running, setRunning] = useState(false);
   const [feedback, setFeedback] = useState<{ ok: boolean; correct: string } | null>(null);
   const [best, setBest] = useState<Record<string, number>>({});
-  const [top, setTop] = useState<{ score: number; user_id: string }[]>([]);
+  const [top, setTop] = useState<{ score: number }[]>([]);
 
   useEffect(() => {
     try { setBest(JSON.parse(localStorage.getItem("almanara-game-best") || "{}")); } catch { /* */ }
