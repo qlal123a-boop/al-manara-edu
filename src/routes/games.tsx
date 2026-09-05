@@ -35,7 +35,7 @@ function GamesPage() {
   const [running, setRunning] = useState(false);
   const [feedback, setFeedback] = useState<{ ok: boolean; correct: string } | null>(null);
   const [best, setBest] = useState<Record<string, number>>({});
-  const [top, setTop] = useState<{ score: number; user_id: string }[]>([]);
+  const [top, setTop] = useState<{ score: number }[]>([]);
 
   useEffect(() => {
     try { setBest(JSON.parse(localStorage.getItem("almanara-game-best") || "{}")); } catch { /* */ }
@@ -44,8 +44,8 @@ function GamesPage() {
   useEffect(() => {
     if (!game) return;
     supabase.from("game_scores" as never)
-      .select("score,user_id").eq("game", game.id).order("score", { ascending: false }).limit(10)
-      .then(({ data }) => setTop((data as never as { score: number; user_id: string }[]) || []));
+      .select("score").eq("game", game.id).order("score", { ascending: false }).limit(10)
+      .then(({ data }) => setTop((data as never as { score: number }[]) || []));
   }, [game]);
 
   const finish = useCallback(async (finalScore: number, gameId: string) => {
