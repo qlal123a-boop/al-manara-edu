@@ -44,8 +44,8 @@ function GamesPage() {
   useEffect(() => {
     if (!game) return;
     supabase.from("game_scores" as never)
-      .select("score,user_id").eq("game", game.id).order("score", { ascending: false }).limit(10)
-      .then(({ data }) => setTop((data as never as { score: number; user_id: string }[]) || []));
+      .select("score").eq("game", game.id).order("score", { ascending: false }).limit(10)
+      .then(({ data }) => setTop((data as never as { score: number }[]) || []));
   }, [game]);
 
   const finish = useCallback(async (finalScore: number, gameId: string) => {
