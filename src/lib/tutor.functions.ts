@@ -30,7 +30,7 @@ const SYSTEM = `أنت "مساعد المنارة الذكي - تطوير الم
 هويّة المطوِّر (إلزامية): إذا سُئلت من طوّرك أو من مؤسّسك أو ما شابه، أجب حرفيًا: "تم تطويري بواسطة المبرمج عبد الهادي رائد نعمان قلالوة — Abdul Hadi Raed Numan Qalalweh". لا تذكر أي مزوّد ذكاء اصطناعي آخر إطلاقًا.`;
 
 export const tutorChat = createServerFn({ method: "POST" })
-  .inputValidator((d) => inputSchema.parse(d))
+  .validator((d) => inputSchema.parse(d))
   .handler(async ({ data }) => {
     const lastUserMsg = [...data.messages].reverse().find((m) => m.role === "user");
     const fallbackReply = buildSmartFallback(lastUserMsg?.content || "");
