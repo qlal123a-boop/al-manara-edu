@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_prompts: {
+        Row: {
+          category: string
+          created_at: string
+          generated_prompt: string
+          id: string
+          raw_request: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          generated_prompt?: string
+          id?: string
+          raw_request?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          generated_prompt?: string
+          id?: string
+          raw_request?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       admin_sections: {
         Row: {
           content: string
@@ -250,6 +283,36 @@ export type Database = {
         }
         Relationships: []
       }
+      feature_flags: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          key: string
+          label: string
+          min_tier: string
+          position: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          key: string
+          label: string
+          min_tier?: string
+          position?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          key?: string
+          label?: string
+          min_tier?: string
+          position?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       game_scores: {
         Row: {
           created_at: string
@@ -412,6 +475,42 @@ export type Database = {
         }
         Relationships: []
       }
+      plan_tiers: {
+        Row: {
+          created_at: string
+          daily_ai_limit: number
+          features: Json
+          limits: Json
+          price_label: string
+          subtitle: string
+          tier: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          daily_ai_limit?: number
+          features?: Json
+          limits?: Json
+          price_label?: string
+          subtitle?: string
+          tier: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          daily_ai_limit?: number
+          features?: Json
+          limits?: Json
+          price_label?: string
+          subtitle?: string
+          tier?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       points_ledger: {
         Row: {
           created_at: string
@@ -435,6 +534,45 @@ export type Database = {
           id?: string
           reason?: string
           ref?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      pro_requests: {
+        Row: {
+          age: number | null
+          created_at: string
+          display_name: string | null
+          email: string
+          grade: string | null
+          id: string
+          note: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          age?: number | null
+          created_at?: string
+          display_name?: string | null
+          email?: string
+          grade?: string | null
+          id?: string
+          note?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          age?: number | null
+          created_at?: string
+          display_name?: string | null
+          email?: string
+          grade?: string | null
+          id?: string
+          note?: string | null
+          status?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -711,6 +849,10 @@ export type Database = {
     }
     Functions: {
       consume_ai_quota: { Args: { _limit?: number }; Returns: Json }
+      decide_pro_request: {
+        Args: { _approve: boolean; _id: string }
+        Returns: undefined
+      }
       get_registered_user_count: { Args: never; Returns: number }
       get_user_points: { Args: { _user_id: string }; Returns: number }
       has_role: {
