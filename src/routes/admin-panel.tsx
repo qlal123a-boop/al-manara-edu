@@ -11,6 +11,8 @@ import { aiFetchPlaylist, aiClassifyVideos, aiScrapeWorksheets, aiImportCourse, 
 import { GRADES, subjectsForGrade } from "@/lib/curriculum";
 import { useCustomSubjects } from "@/lib/use-custom-subjects";
 import { COURSE_CATEGORY_LABELS } from "@/lib/certificate-theme";
+import { SubscriptionRequestsTab, PlansAdminTab, PromptStudioTab } from "@/components/subscriptions-admin";
+import { AdminSectionsTab } from "@/components/admin-sections-tab";
 
 export const Route = createFileRoute("/admin-panel")({
   component: AdminPanelPage,
