@@ -11,6 +11,8 @@ import { aiFetchPlaylist, aiClassifyVideos, aiScrapeWorksheets, aiImportCourse, 
 import { GRADES, subjectsForGrade } from "@/lib/curriculum";
 import { useCustomSubjects } from "@/lib/use-custom-subjects";
 import { COURSE_CATEGORY_LABELS } from "@/lib/certificate-theme";
+import { SubscriptionRequestsTab, PlansAdminTab, PromptStudioTab } from "@/components/subscriptions-admin";
+import { AdminSectionsTab } from "@/components/admin-sections-tab";
 
 export const Route = createFileRoute("/admin-panel")({
   component: AdminPanelPage,
@@ -52,7 +54,7 @@ function AdminPanelPage() {
 }
 
 function Dashboard() {
-  const [tab, setTab] = useState<"stats" | "ai" | "courses" | "subjects" | "library" | "store" | "mods" | "quotes" | "quran" | "features" | "brand" | "settings">("stats");
+  const [tab, setTab] = useState<"stats" | "ai" | "courses" | "subjects" | "library" | "store" | "mods" | "subs" | "plans" | "prompts" | "sections" | "quotes" | "quran" | "features" | "brand" | "settings">("stats");
 
   const navigate = useNavigate();
 
@@ -72,6 +74,10 @@ function Dashboard() {
             ["library", "المكتبة", BookOpen],
             ["store", "متجر النقاط", ShoppingBag],
             ["mods", "طلبات المشرفين", MessageSquare],
+            ["subs", "طلبات الاشتراك", Award],
+            ["plans", "الخطط والمزايا", Sparkles],
+            ["prompts", "مولّد الأوامر", Wand2],
+            ["sections", "أقسام الموقع", FileText],
             ["quotes", "الاقتباسات", QuoteIcon],
             ["quran", "الآيات القرآنية", BookOpen],
             ["features", "الميزات", Sparkles],
@@ -118,6 +124,10 @@ function Dashboard() {
         {tab === "library" && <LibraryAdminTab />}
         {tab === "store" && <StoreAdminTab />}
         {tab === "mods" && <ModsTab />}
+        {tab === "subs" && <SubscriptionRequestsTab />}
+        {tab === "plans" && <PlansAdminTab />}
+        {tab === "prompts" && <PromptStudioTab />}
+        {tab === "sections" && <AdminSectionsTab />}
         {tab === "quotes" && <QuotesTab />}
         {tab === "quran" && <QuranTab />}
         {tab === "settings" && <SettingsTab />}

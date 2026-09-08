@@ -149,6 +149,9 @@ export function SiteHeader() {
                 </Link>
               );
             })}
+            <Link to="/pricing" onClick={() => setOpen(false)} className="rounded-lg border border-gold/30 px-3 py-2 text-center text-sm font-semibold text-gold">
+              الخطط
+            </Link>
             <Link to="/moderator-request" onClick={() => setOpen(false)} className="rounded-lg border border-gold/30 px-3 py-2 text-center text-sm font-semibold text-gold">
               {t("nav.join")}
             </Link>

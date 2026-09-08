@@ -16,6 +16,8 @@ import {
 import { toast } from "sonner";
 import { useProfile } from "@/lib/profile";
 import { useAuthUser } from "@/lib/use-auth";
+import { createProRequest, buildWhatsAppLink } from "@/lib/plans";
+import { useBrand } from "@/lib/site-settings";
 
 export const Route = createFileRoute("/pricing")({
   component: PricingPage,
@@ -60,22 +62,23 @@ function PricingPage() {
   const navigate = useNavigate();
   const { user } = useAuthUser();
   const { profile, plan, update } = useProfile();
+  const { value: brand } = useBrand();
   const [busy, setBusy] = useState<"free" | "pro" | null>(null);
+  const [proOpen, setProOpen] = useState(false);
+  const [grade, setGrade] = useState("");
+  const [age, setAge] = useState("");
+  const [note, setNote] = useState("");
 
-  const choose = async (next: "free" | "pro") => {
+  const chooseFree = async () => {
     if (!user) {
       toast.info("سجّل دخولك أولًا لاختيار الخطة");
       navigate({ to: "/login" });
       return;
     }
-    setBusy(next);
+    setBusy("free");
     try {
-      await update.mutateAsync({
-        plan: next,
-        onboarded: true,
-        plan_started_at: next === "pro" ? new Date().toISOString() : null,
-      });
-      toast.success(next === "pro" ? "تم تفعيل «منارة بلس» 🎉" : "تم المتابعة بالخطة المجانية");
+      await update.mutateAsync({ plan: "free", onboarded: true, plan_started_at: null });
+      toast.success("تم المتابعة بالخطة المجانية");
       navigate({ to: "/" });
     } catch {
       toast.error("تعذّر حفظ الخطة، حاول مجددًا");
@@ -83,6 +86,55 @@ function PricingPage() {
       setBusy(null);
     }
   };
+
+  const openPro = () => {
+    if (!user) {
+      toast.info("سجّل دخولك أولًا لاختيار الخطة");
+      navigate({ to: "/login" });
+      return;
+    }
+    setProOpen(true);
+  };
+
+  const submitPro = async () => {
+    if (!user) return;
+    if (!grade.trim()) {
+      toast.error("يرجى كتابة الصف الدراسي");
+      return;
+    }
+    setBusy("pro");
+    try {
+      const { error } = await createProRequest({
+        user_id: user.id,
+        email: user.email ?? "",
+        display_name: profile?.display_name ?? null,
+        grade: grade.trim(),
+        age: age ? Number(age) : null,
+        note: note.trim() || undefined,
+      });
+      if (error) throw error;
+
+      await update.mutateAsync({ onboarded: true }).catch(() => undefined);
+
+      const msg = [
+        "السلام عليكم، أرغب بالاشتراك في «منارة بلس».",
+        `الاسم: ${profile?.display_name || user.email || "-"}`,
+        `البريد: ${user.email ?? "-"}`,
+        `الصف: ${grade.trim()}`,
+        age ? `العمر: ${age}` : "",
+        note.trim() ? `ملاحظة: ${note.trim()}` : "",
+      ].filter(Boolean).join("\n");
+
+      window.open(buildWhatsAppLink(brand.whatsapp || brand.contact_phone || "", msg), "_blank", "noopener");
+      toast.success("تم إرسال طلبك — سيتم تفعيل الاشتراك بعد موافقة الإدارة");
+      setProOpen(false);
+    } catch {
+      toast.error("تعذّر إرسال الطلب، حاول مجددًا");
+    } finally {
+      setBusy(null);
+    }
+  };
+
 
   return (
     <div className="page-shell py-10 md:py-16">
@@ -131,7 +183,7 @@ function PricingPage() {
           </ul>
 
           <button
-            onClick={() => choose("free")}
+            onClick={chooseFree}
             disabled={busy !== null}
             className="mt-7 inline-flex items-center justify-center gap-2 rounded-xl border border-border py-3.5 text-sm font-extrabold transition-smooth hover:border-gold disabled:opacity-60"
           >
@@ -187,7 +239,7 @@ function PricingPage() {
           </div>
 
           <button
-            onClick={() => choose("pro")}
+            onClick={openPro}
             disabled={busy !== null}
             className="mt-7 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-gold py-3.5 text-sm font-extrabold shadow-gold transition-smooth hover:scale-[1.01] disabled:opacity-60"
             style={{ color: "var(--royal-deep)" }}
@@ -202,6 +254,63 @@ function PricingPage() {
           )}
         </section>
       </div>
+
+      {proOpen && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 px-4 py-8" onClick={() => setProOpen(false)}>
+          <div
+            className="max-h-full w-full max-w-md overflow-y-auto rounded-3xl border border-gold/40 bg-card p-6 shadow-luxury"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-extrabold">طلب الاشتراك في «منارة بلس»</h3>
+                <p className="mt-1 text-xs text-muted-foreground">أدخل بياناتك، وسنفتح لك محادثة واتساب مع الإدارة لإتمام الاشتراك.</p>
+              </div>
+              <button onClick={() => setProOpen(false)} aria-label="إغلاق" className="rounded-lg border border-border p-1.5">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <label className="mt-5 block text-xs font-bold">الصف الدراسي</label>
+            <input
+              value={grade}
+              onChange={(e) => setGrade(e.target.value)}
+              placeholder="مثال: الصف التاسع"
+              className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm"
+            />
+
+            <label className="mt-4 block text-xs font-bold">العمر</label>
+            <input
+              value={age}
+              onChange={(e) => setAge(e.target.value.replace(/[^\d]/g, ""))}
+              inputMode="numeric"
+              placeholder="مثال: 15"
+              className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm"
+            />
+
+            <label className="mt-4 block text-xs font-bold">ملاحظة (اختياري)</label>
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              rows={3}
+              className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm"
+            />
+
+            <button
+              onClick={submitPro}
+              disabled={busy === "pro"}
+              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-gold py-3 text-sm font-extrabold shadow-gold disabled:opacity-60"
+              style={{ color: "var(--royal-deep)" }}
+            >
+              {busy === "pro" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              إرسال الطلب عبر واتساب
+            </button>
+            <p className="mt-3 text-center text-[11px] text-muted-foreground">
+              يُحفظ طلبك في لوحة التحكم، ويُفعَّل الاشتراك فور موافقة الإدارة.
+            </p>
+          </div>
+        </div>
+      )}
 
       <p className="mx-auto mt-8 max-w-2xl text-center text-xs text-muted-foreground">
         يمكنك تغيير خطتك في أي وقت من هذه الصفحة. الأسعار بالدولار الأمريكي وتشمل جميع التحديثات القادمة.

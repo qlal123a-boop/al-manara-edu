@@ -15,6 +15,7 @@ import { MobileTabBar } from "@/components/mobile-tab-bar";
 import { Toaster } from "@/components/ui/sonner";
 import { useVisitorPing } from "@/lib/site-settings";
 import { I18nProvider } from "@/lib/i18n";
+import { GlobalErrorBoundary } from "@/components/error-boundary";
 
 // Defer chatbot bundle until after first paint — non-critical for LCP.
 const ChatbotWidget = lazy(() =>
@@ -104,16 +105,18 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <I18nProvider>
-        <div className="pb-safe-nav flex min-h-screen flex-col">
-          <SiteHeader />
-          <StudyBar />
-          <main className="flex-1">
-            <Outlet />
-          </main>
-          <SiteFooter />
-        </div>
-        <MobileTabBar />
-        <Suspense fallback={null}><ChatbotWidget /></Suspense>
+        <GlobalErrorBoundary>
+          <div className="pb-safe-nav flex min-h-screen flex-col">
+            <SiteHeader />
+            <StudyBar />
+            <main className="flex-1">
+              <Outlet />
+            </main>
+            <SiteFooter />
+          </div>
+          <MobileTabBar />
+          <Suspense fallback={null}><ChatbotWidget /></Suspense>
+        </GlobalErrorBoundary>
         <Toaster richColors position="top-center" />
       </I18nProvider>
     </QueryClientProvider>
