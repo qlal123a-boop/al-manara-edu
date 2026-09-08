@@ -183,7 +183,7 @@ function PricingPage() {
           </ul>
 
           <button
-            onClick={() => choose("free")}
+            onClick={chooseFree}
             disabled={busy !== null}
             className="mt-7 inline-flex items-center justify-center gap-2 rounded-xl border border-border py-3.5 text-sm font-extrabold transition-smooth hover:border-gold disabled:opacity-60"
           >
@@ -239,7 +239,7 @@ function PricingPage() {
           </div>
 
           <button
-            onClick={() => choose("pro")}
+            onClick={openPro}
             disabled={busy !== null}
             className="mt-7 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-gold py-3.5 text-sm font-extrabold shadow-gold transition-smooth hover:scale-[1.01] disabled:opacity-60"
             style={{ color: "var(--royal-deep)" }}
