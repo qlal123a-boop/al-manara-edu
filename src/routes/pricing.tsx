@@ -62,7 +62,7 @@ function PricingPage() {
   const navigate = useNavigate();
   const { user } = useAuthUser();
   const { profile, plan, update } = useProfile();
-  const brand = useBrand();
+  const { value: brand } = useBrand();
   const [busy, setBusy] = useState<"free" | "pro" | null>(null);
   const [proOpen, setProOpen] = useState(false);
   const [grade, setGrade] = useState("");
