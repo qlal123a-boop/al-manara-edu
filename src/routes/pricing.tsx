@@ -255,6 +255,63 @@ function PricingPage() {
         </section>
       </div>
 
+      {proOpen && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 px-4 py-8" onClick={() => setProOpen(false)}>
+          <div
+            className="max-h-full w-full max-w-md overflow-y-auto rounded-3xl border border-gold/40 bg-card p-6 shadow-luxury"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-extrabold">طلب الاشتراك في «منارة بلس»</h3>
+                <p className="mt-1 text-xs text-muted-foreground">أدخل بياناتك، وسنفتح لك محادثة واتساب مع الإدارة لإتمام الاشتراك.</p>
+              </div>
+              <button onClick={() => setProOpen(false)} aria-label="إغلاق" className="rounded-lg border border-border p-1.5">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <label className="mt-5 block text-xs font-bold">الصف الدراسي</label>
+            <input
+              value={grade}
+              onChange={(e) => setGrade(e.target.value)}
+              placeholder="مثال: الصف التاسع"
+              className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm"
+            />
+
+            <label className="mt-4 block text-xs font-bold">العمر</label>
+            <input
+              value={age}
+              onChange={(e) => setAge(e.target.value.replace(/[^\d]/g, ""))}
+              inputMode="numeric"
+              placeholder="مثال: 15"
+              className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm"
+            />
+
+            <label className="mt-4 block text-xs font-bold">ملاحظة (اختياري)</label>
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              rows={3}
+              className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm"
+            />
+
+            <button
+              onClick={submitPro}
+              disabled={busy === "pro"}
+              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-gold py-3 text-sm font-extrabold shadow-gold disabled:opacity-60"
+              style={{ color: "var(--royal-deep)" }}
+            >
+              {busy === "pro" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              إرسال الطلب عبر واتساب
+            </button>
+            <p className="mt-3 text-center text-[11px] text-muted-foreground">
+              يُحفظ طلبك في لوحة التحكم، ويُفعَّل الاشتراك فور موافقة الإدارة.
+            </p>
+          </div>
+        </div>
+      )}
+
       <p className="mx-auto mt-8 max-w-2xl text-center text-xs text-muted-foreground">
         يمكنك تغيير خطتك في أي وقت من هذه الصفحة. الأسعار بالدولار الأمريكي وتشمل جميع التحديثات القادمة.
       </p>
