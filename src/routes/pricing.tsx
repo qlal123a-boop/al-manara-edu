@@ -16,6 +16,8 @@ import {
 import { toast } from "sonner";
 import { useProfile } from "@/lib/profile";
 import { useAuthUser } from "@/lib/use-auth";
+import { createProRequest, buildWhatsAppLink } from "@/lib/plans";
+import { useBrand } from "@/lib/site-settings";
 
 export const Route = createFileRoute("/pricing")({
   component: PricingPage,
@@ -60,22 +62,23 @@ function PricingPage() {
   const navigate = useNavigate();
   const { user } = useAuthUser();
   const { profile, plan, update } = useProfile();
+  const brand = useBrand();
   const [busy, setBusy] = useState<"free" | "pro" | null>(null);
+  const [proOpen, setProOpen] = useState(false);
+  const [grade, setGrade] = useState("");
+  const [age, setAge] = useState("");
+  const [note, setNote] = useState("");
 
-  const choose = async (next: "free" | "pro") => {
+  const chooseFree = async () => {
     if (!user) {
       toast.info("سجّل دخولك أولًا لاختيار الخطة");
       navigate({ to: "/login" });
       return;
     }
-    setBusy(next);
+    setBusy("free");
     try {
-      await update.mutateAsync({
-        plan: next,
-        onboarded: true,
-        plan_started_at: next === "pro" ? new Date().toISOString() : null,
-      });
-      toast.success(next === "pro" ? "تم تفعيل «منارة بلس» 🎉" : "تم المتابعة بالخطة المجانية");
+      await update.mutateAsync({ plan: "free", onboarded: true, plan_started_at: null });
+      toast.success("تم المتابعة بالخطة المجانية");
       navigate({ to: "/" });
     } catch {
       toast.error("تعذّر حفظ الخطة، حاول مجددًا");
@@ -83,6 +86,55 @@ function PricingPage() {
       setBusy(null);
     }
   };
+
+  const openPro = () => {
+    if (!user) {
+      toast.info("سجّل دخولك أولًا لاختيار الخطة");
+      navigate({ to: "/login" });
+      return;
+    }
+    setProOpen(true);
+  };
+
+  const submitPro = async () => {
+    if (!user) return;
+    if (!grade.trim()) {
+      toast.error("يرجى كتابة الصف الدراسي");
+      return;
+    }
+    setBusy("pro");
+    try {
+      const { error } = await createProRequest({
+        user_id: user.id,
+        email: user.email ?? "",
+        display_name: profile?.display_name ?? null,
+        grade: grade.trim(),
+        age: age ? Number(age) : null,
+        note: note.trim() || undefined,
+      });
+      if (error) throw error;
+
+      await update.mutateAsync({ onboarded: true }).catch(() => undefined);
+
+      const msg = [
+        "السلام عليكم، أرغب بالاشتراك في «منارة بلس».",
+        `الاسم: ${profile?.display_name || user.email || "-"}`,
+        `البريد: ${user.email ?? "-"}`,
+        `الصف: ${grade.trim()}`,
+        age ? `العمر: ${age}` : "",
+        note.trim() ? `ملاحظة: ${note.trim()}` : "",
+      ].filter(Boolean).join("\n");
+
+      window.open(buildWhatsAppLink(brand.whatsapp || brand.contact_phone || "", msg), "_blank", "noopener");
+      toast.success("تم إرسال طلبك — سيتم تفعيل الاشتراك بعد موافقة الإدارة");
+      setProOpen(false);
+    } catch {
+      toast.error("تعذّر إرسال الطلب، حاول مجددًا");
+    } finally {
+      setBusy(null);
+    }
+  };
+
 
   return (
     <div className="page-shell py-10 md:py-16">
