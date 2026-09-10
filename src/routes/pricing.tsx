@@ -16,7 +16,7 @@ import {
 import { toast } from "sonner";
 import { useProfile } from "@/lib/profile";
 import { useAuthUser } from "@/lib/use-auth";
-import { createProRequest, buildWhatsAppLink } from "@/lib/plans";
+import { createProRequest, buildWhatsAppLink, usePlanTiers } from "@/lib/plans";
 import { useBrand } from "@/lib/site-settings";
 
 export const Route = createFileRoute("/pricing")({
@@ -36,38 +36,20 @@ export const Route = createFileRoute("/pricing")({
   }),
 });
 
-const FREE_FEATURES = [
-  { label: "المساعد الذكي — ٥ أسئلة يوميًا", ok: true },
-  { label: "المستشار الدراسي — محادثة أساسية", ok: true },
-  { label: "اللوح الذكي — قلم وألوان أساسية", ok: true },
-  { label: "الملخصات وأوراق العمل — عدد محدود يوميًا", ok: true },
-  { label: "المكتبة والدروس والقنوات التعليمية", ok: true },
-  { label: "تنزيل PDF غير محدود", ok: false },
-  { label: "تشخيص متقدّم ومتابعة مستمرة", ok: false },
-  { label: "اللوح الذكي Pro (ملء الشاشة والفرش المتقدمة)", ok: false },
-];
-
-const PRO_FEATURES = [
-  "المساعد الذكي بلا حدود — أسئلة غير محدودة",
-  "المستشار الدراسي الكامل: تشخيص المشكلات ومتابعة مستمرة",
-  "اللوح الذكي Pro: ملء الشاشة، فرش متقدمة، منتقي ألوان مخصّص",
-  "توليد ملخصات وأوراق عمل واختبارات بلا حدود",
-  "تنزيل وطباعة PDF بلا حدود",
-  "صور ورسوم تعليمية مولّدة تلقائيًا حسب الدرس",
-  "أولوية في السرعة ودعم أسرع",
-  "شهادات إتمام بتصاميم مميّزة",
-];
-
 function PricingPage() {
   const navigate = useNavigate();
   const { user } = useAuthUser();
   const { profile, plan, update } = useProfile();
   const { value: brand } = useBrand();
+  const { tiers, loading: tiersLoading } = usePlanTiers();
   const [busy, setBusy] = useState<"free" | "pro" | null>(null);
   const [proOpen, setProOpen] = useState(false);
   const [grade, setGrade] = useState("");
   const [age, setAge] = useState("");
   const [note, setNote] = useState("");
+
+  const freeTier = tiers.find((t) => t.tier === "free");
+  const proTier = tiers.find((t) => t.tier === "pro");
 
   const chooseFree = async () => {
     if (!user) {
@@ -135,6 +117,9 @@ function PricingPage() {
     }
   };
 
+  if (tiersLoading) {
+    return <div className="flex min-h-[400px] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-gold" /></div>;
+  }
 
   return (
     <div className="page-shell py-10 md:py-16">
@@ -150,34 +135,34 @@ function PricingPage() {
       </header>
 
       <div className="mx-auto mt-10 grid max-w-5xl gap-6 lg:grid-cols-2">
-        {/* Free */}
+        {/* Free Plan from Database */}
         <section className="relative flex flex-col rounded-3xl border border-border bg-card p-6 shadow-card md:p-8">
           <div className="flex items-center gap-3">
             <div className="grid h-12 w-12 place-items-center rounded-2xl bg-secondary">
               <Gauge className="h-5 w-5 text-muted-foreground" />
             </div>
             <div>
-              <h2 className="text-xl font-extrabold">الخطة المجانية</h2>
-              <p className="text-xs text-muted-foreground">للبداية واستكشاف المنصة</p>
+              <h2 className="text-xl font-extrabold">{freeTier?.title || "الخطة المجانية"}</h2>
+              <p className="text-xs text-muted-foreground">{freeTier?.subtitle || "للبداية واستكشاف المنصة"}</p>
             </div>
           </div>
 
           <div className="mt-6 flex items-end gap-2">
-            <span className="text-5xl font-extrabold">$0</span>
+            <span className="text-5xl font-extrabold">{freeTier?.price_label || "$0"}</span>
             <span className="pb-2 text-sm text-muted-foreground">/ شهريًا</span>
           </div>
 
           <ul className="mt-6 flex-1 space-y-3 text-sm">
-            {FREE_FEATURES.map((f) => (
-              <li key={f.label} className="flex items-start gap-2.5">
+            {(freeTier?.features || []).map((f, i) => (
+              <li key={i} className="flex items-start gap-2.5">
                 <span
                   className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full ${
-                    f.ok ? "bg-emerald-500/15 text-emerald-600" : "bg-muted text-muted-foreground"
+                    f.included ? "bg-emerald-500/15 text-emerald-600" : "bg-muted text-muted-foreground"
                   }`}
                 >
-                  {f.ok ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
+                  {f.included ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
                 </span>
-                <span className={f.ok ? "" : "text-muted-foreground line-through"}>{f.label}</span>
+                <span className={f.included ? "" : "text-muted-foreground line-through"}>{f.label}</span>
               </li>
             ))}
           </ul>
@@ -195,7 +180,7 @@ function PricingPage() {
           )}
         </section>
 
-        {/* Pro */}
+        {/* Pro Plan from Database */}
         <section className="relative flex flex-col overflow-hidden rounded-3xl border-2 border-gold bg-gradient-royal p-6 text-primary-foreground shadow-luxury md:p-8">
           <span className="absolute end-6 top-6 rounded-full bg-gradient-gold px-3 py-1 text-[11px] font-extrabold" style={{ color: "var(--royal-deep)" }}>
             الأكثر اختيارًا
@@ -205,23 +190,23 @@ function PricingPage() {
               <Crown className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="text-xl font-extrabold text-gold">منارة بلس</h2>
-              <p className="text-xs text-primary-foreground/70">لكل طالب يريد التفوّق فعلًا</p>
+              <h2 className="text-xl font-extrabold text-gold">{proTier?.title || "منارة بلس"}</h2>
+              <p className="text-xs text-primary-foreground/70">{proTier?.subtitle || "لكل طالب يريد التفوّق فعلًا"}</p>
             </div>
           </div>
 
           <div className="mt-6 flex items-end gap-2">
-            <span className="text-5xl font-extrabold text-gold">$1</span>
+            <span className="text-5xl font-extrabold text-gold">{proTier?.price_label || "$1"}</span>
             <span className="pb-2 text-sm text-primary-foreground/70">/ شهريًا</span>
           </div>
 
           <ul className="mt-6 flex-1 space-y-3 text-sm">
-            {PRO_FEATURES.map((f) => (
-              <li key={f} className="flex items-start gap-2.5">
-                <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-gold/20 text-gold">
-                  <Check className="h-3.5 w-3.5" />
+            {(proTier?.features || []).map((f, i) => (
+              <li key={i} className="flex items-start gap-2.5">
+                <span className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full ${f.included ? "bg-gold/20 text-gold" : "bg-white/10 text-white/40"}`}>
+                  {f.included ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
                 </span>
-                <span>{f}</span>
+                <span className={f.included ? "" : "text-white/40 line-through"}>{f.label}</span>
               </li>
             ))}
           </ul>
