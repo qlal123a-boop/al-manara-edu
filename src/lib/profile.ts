@@ -13,6 +13,9 @@ export type Profile = {
   onboarded: boolean;
   ai_usage_date: string;
   ai_usage_count: number;
+  age: number | null;
+  grade: string | null;
+  subscription_status: "pending" | "approved" | "none" | string;
 };
 
 export const FREE_DAILY_AI_LIMIT = 5;
