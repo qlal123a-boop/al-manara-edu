@@ -4,12 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCourseLessons, useCourseProgress } from "@/lib/course-progress";
 import { toYouTubeEmbed, YT_IFRAME_ALLOW } from "@/lib/youtube";
 import { themeForCategory } from "@/lib/certificate-theme";
-import { CheckCircle2, Circle, Award, ArrowRight, ArrowLeft, PlayCircle, X, Sparkles } from "lucide-react";
+import { CheckCircle2, Circle, Award, ArrowRight, ArrowLeft, PlayCircle, X, Sparkles, Lock, Crown } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { generateQuiz, type QuizQuestion } from "@/lib/exam.functions";
-// auth gating removed — anyone can view course; login required only to save progress/issue cert
+import { useProfile } from "@/lib/profile";
 
 export const Route = createFileRoute("/courses/$courseId")({
   component: CourseDetailPage,
@@ -23,6 +23,15 @@ type CourseRow = {
   category: string | null; pass_threshold: number | null;
 };
 
+type Lesson = {
+  id: string;
+  title: string;
+  description: string | null;
+  video_url: string;
+  position: number;
+  is_premium?: boolean;
+};
+
 function CourseDetailPage() {
   const { courseId } = Route.useParams();
   const navigate = useNavigate();
@@ -32,8 +41,9 @@ function CourseDetailPage() {
   const [nameOpen, setNameOpen] = useState(false);
   const [studentName, setStudentName] = useState("");
   const [issuingCert, setIssuingCert] = useState(false);
-  const { lessons, loading: lessonsLoading } = useCourseLessons(courseId);
+  const { lessons, loading: lessonsLoading } = useCourseLessons(courseId) as { lessons: Lesson[], loading: boolean };
   const { done, completedAt, markDone, completeCourse, user } = useCourseProgress(courseId);
+  const { plan } = useProfile();
 
   useEffect(() => {
     supabase.from("courses").select("*").eq("id", courseId).maybeSingle()
@@ -49,7 +59,7 @@ function CourseDetailPage() {
   const playList = lessons.length
     ? lessons
     : (course.video_url
-      ? [{ id: course.id, title: course.title, description: course.description, video_url: course.video_url, position: 0 }]
+      ? [{ id: course.id, title: course.title, description: course.description, video_url: course.video_url, position: 0, is_premium: false }] as Lesson[]
       : []);
 
   const activeLesson = playList.find((l) => l.id === active) ?? playList[0];
@@ -57,7 +67,13 @@ function CourseDetailPage() {
   const doneCount = playList.filter((l) => done.has(l.id)).length;
   const pct = totalCount ? Math.round((doneCount / totalCount) * 100) : 0;
   const allDone = totalCount > 0 && doneCount === totalCount;
-  
+
+  const isLessonLocked = (lesson: Lesson) => {
+    if (!lesson.is_premium) return false;
+    return plan !== "pro";
+  };
+
+  const currentIsLocked = activeLesson ? isLessonLocked(activeLesson) : false;
 
   return (
     <div className="page-shell py-8 md:py-10">
@@ -104,7 +120,18 @@ function CourseDetailPage() {
 
       <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
         <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-card">
-          {activeLesson && toYouTubeEmbed(activeLesson.video_url) ? (
+          {currentIsLocked ? (
+            <div className="flex aspect-video w-full flex-col items-center justify-center bg-gradient-royal px-6 text-center text-primary-foreground">
+              <div className="mb-4 rounded-full bg-gold/20 p-4">
+                <Lock className="h-10 w-10 text-gold" />
+              </div>
+              <h3 className="text-xl font-extrabold">هذا الدرس متوفر للمشتركين فقط</h3>
+              <p className="mt-2 text-sm text-gold/80">اشترك في باقة المنارة بلس للوصول إلى كافة الدروس المميزة والشهادات.</p>
+              <Link to="/pricing" className="mt-6 rounded-xl bg-gradient-gold px-8 py-3 text-sm font-extrabold shadow-gold" style={{ color: "var(--royal-deep)" }}>
+                ترقية الحساب الآن
+              </Link>
+            </div>
+          ) : activeLesson && toYouTubeEmbed(activeLesson.video_url) ? (
             <div className="aspect-video w-full bg-black">
               <iframe
                 key={activeLesson.id}
@@ -121,21 +148,34 @@ function CourseDetailPage() {
               <p className="mt-2 text-sm">لا يوجد فيديو متاح</p>
             </div>
           )}
+          
           {activeLesson && (
             <div className="p-5">
-              <h2 className="text-xl font-extrabold">{activeLesson.title}</h2>
+              <div className="flex items-start justify-between">
+                <div>
+                  <h2 className="text-xl font-extrabold">{activeLesson.title}</h2>
+                  {activeLesson.is_premium && (
+                    <span className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold text-gold">
+                      <Crown className="h-3 w-3" /> درس مميز (Premium)
+                    </span>
+                  )}
+                </div>
+              </div>
+              
               {activeLesson.description && (
                 <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">{activeLesson.description}</p>
               )}
+              
               <div className="mt-4 flex flex-wrap items-center gap-2">
                 <button
                   onClick={async () => {
+                    if (currentIsLocked) { toast.error("هذا الدرس مقفل"); return; }
                     await markDone(activeLesson.id);
                     const idx = playList.findIndex(l => l.id === activeLesson.id);
                     const next = playList[idx + 1];
                     if (next) setActive(next.id);
                   }}
-                  disabled={done.has(activeLesson.id)}
+                  disabled={done.has(activeLesson.id) || currentIsLocked}
                   className="inline-flex items-center gap-2 rounded-xl bg-gradient-royal px-4 py-2 text-sm font-bold text-gold shadow-luxury disabled:opacity-60"
                 >
                   <CheckCircle2 className="h-4 w-4" /> {done.has(activeLesson.id) ? "مُنجَز" : "إنهاء الدرس والانتقال للتالي"}
@@ -179,6 +219,7 @@ function CourseDetailPage() {
               {playList.map((l, i) => {
                 const isDone = done.has(l.id);
                 const isActive = active === l.id;
+                const locked = isLessonLocked(l);
                 return (
                   <li key={l.id}>
                     <button
@@ -187,9 +228,16 @@ function CourseDetailPage() {
                         isActive ? "bg-gradient-royal text-gold" : "hover:bg-secondary"
                       }`}
                     >
-                      {isDone ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" /> : <Circle className="mt-0.5 h-4 w-4 shrink-0 opacity-50" />}
+                      {isDone ? (
+                         <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+                      ) : locked ? (
+                         <Lock className="mt-0.5 h-4 w-4 shrink-0 text-gold/60" />
+                      ) : (
+                         <Circle className="mt-0.5 h-4 w-4 shrink-0 opacity-50" />
+                      )}
                       <span className="min-w-0 flex-1">
                         <span className="block font-bold">{i + 1}. {l.title}</span>
+                        {l.is_premium && <span className="mt-0.5 block text-[9px] opacity-70 italic">محتوى مميز</span>}
                       </span>
                     </button>
                   </li>
@@ -291,7 +339,10 @@ function FinalExamModal({ course, lessonTitles, onClose, onPass }: {
         if (!r.ok) { toast.error(r.error); onClose(); return; }
         setQuestions(r.questions);
         setPhase("quiz");
-      } catch (e) { toast.error((e as Error).message); onClose(); }
+      } catch (e) {
+        toast.error((e as Error).message);
+        onClose();
+      }
     })();
     return () => { cancel = true; };
   }, [gen, course.title, lessonTitles, onClose]);
@@ -371,4 +422,7 @@ function FinalExamModal({ course, lessonTitles, onClose, onPass }: {
       </div>
     </div>
   );
+}
+",
+  "summary": "تحديث صفحة تفاصيل الكورس لإضافة منطق قفل الدروس المدفوعة (Lock) وعرض رسالة دعوة للاشتراك لغير المشتركين، مع تحسين قائمة الدروس لإظهار شارات 'Premium' وأيقونات القفل."
 }

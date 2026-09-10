@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type TierKey = "free" | "pro";
 
-export type PlanFeature = { label: string; included: boolean };
+export type PlanFeature = { label: string; included: boolean; isNew?: boolean };
 
 export type PlanTier = {
   tier: TierKey;
@@ -49,7 +49,11 @@ function asFeatures(value: unknown): PlanFeature[] {
   if (!Array.isArray(value)) return [];
   return value
     .filter((f): f is PlanFeature => !!f && typeof f === "object" && "label" in (f as object))
-    .map((f) => ({ label: String(f.label ?? ""), included: Boolean(f.included) }));
+    .map((f) => ({
+      label: String(f.label ?? ""),
+      included: Boolean(f.included),
+      isNew: Boolean(f.isNew),
+    }));
 }
 
 /* ---------------------------------- tiers --------------------------------- */
