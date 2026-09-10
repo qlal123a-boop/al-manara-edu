@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Lock, ShieldCheck, LogIn, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuthUser, signOut, SUPER_ADMIN_EMAIL } from "@/lib/use-auth";
+import { useAuthUser, signOut, SUPER_ADMIN_EMAIL, getAuthErrorMessage } from "@/lib/use-auth";
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
@@ -54,25 +54,15 @@ function LoginPage() {
     );
   }
 
-  const arabize = (m: string): string => {
-    const s = m.toLowerCase();
-    if (s.includes("invalid login")) return "البريد أو كلمة المرور غير صحيحة. تأكّد منها أو أنشئ حسابًا جديدًا.";
-    if (s.includes("email not confirmed")) return "لم تؤكّد بريدك بعد. افتح صندوق الوارد واضغط رابط التفعيل ثم سجّل الدخول.";
-    if (s.includes("user already registered")) return "هذا البريد مسجَّل مسبقًا. سجّل الدخول مباشرة.";
-    if (s.includes("password should be")) return "كلمة المرور قصيرة — استخدم 8 أحرف فأكثر.";
-    if (s.includes("rate limit")) return "محاولات كثيرة — انتظر دقيقة ثم حاول مجددًا.";
-    if (s.includes("invalid email")) return "صيغة البريد الإلكتروني غير صحيحة.";
-    if (s.includes("network")) return "تعذّر الاتصال بالخادم — تحقّق من الإنترنت.";
-    return "حدث خطأ. حاول مرة أخرى.";
-  };
-
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanEmail = email.trim().toLowerCase();
     const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    
     if (!emailRe.test(cleanEmail)) return toast.error("صيغة البريد الإلكتروني غير صحيحة");
     if (password.length < 6) return toast.error("كلمة المرور يجب أن تكون 6 أحرف على الأقل");
     if (mode === "signup" && password.length < 8) return toast.error("لإنشاء حساب: كلمة المرور 8 أحرف فأكثر");
+    
     setBusy(true);
     try {
       if (mode === "signin") {
@@ -85,15 +75,21 @@ function LoginPage() {
         const { error } = await supabase.auth.signUp({
           email: cleanEmail,
           password,
-          options: { emailRedirectTo: `${window.location.origin}/login` },
+          options: {
+            emailRedirectTo: `${window.location.origin}/login`,
+            data: {
+               role: 'student' 
+            }
+          },
         });
         if (error) throw error;
+        
         toast.success("تم إنشاء الحساب — أرسلنا رابط تفعيل إلى بريدك. افتح بريدك الإلكتروني واضغط الرابط ثم عُد لتسجيل الدخول.", { duration: 9000 });
         setMode("signin");
       }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "";
-      toast.error(arabize(msg));
+    } catch (err: any) {
+      console.error("Auth Error:", err);
+      toast.error(getAuthErrorMessage(err));
     } finally {
       setBusy(false);
     }
