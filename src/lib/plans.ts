@@ -59,7 +59,7 @@ export function usePlanTiers() {
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    const { data, error } = await supabase.from("plan_tiers").select("*").order("price_label");
+    const { data, error } = await supabase.from("plan_tiers").select("*").order("daily_ai_limit", { ascending: true });
     if (!error && data) {
       setTiers(
         (data as unknown as PlanTier[]).map((t) => ({
@@ -275,4 +275,7 @@ export async function saveAdminPrompt(row: Partial<AdminPrompt> & { title: strin
 export async function deleteAdminPrompt(id: string) {
   const { error } = await supabase.from("admin_prompts").delete().eq("id", id);
   return error;
+}
+",
+  "summary": "تحديث منطق جلب الخطط والمميزات ليتم سحبها ديناميكيًا من قاعدة البيانات بدلاً من القيم الثابتة، مع تحسين ترتيب العرض."
 }
