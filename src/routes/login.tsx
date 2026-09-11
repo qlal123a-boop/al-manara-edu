@@ -36,12 +36,20 @@ function LoginPage() {
             {isSuperAdmin ? "أنت المسؤول الأعلى — لديك صلاحية كاملة." : "تم تسجيل الدخول بنجاح."}
           </p>
           <div className="mt-6 flex flex-col gap-2">
-            {isSuperAdmin && (
+            {isSuperAdmin ? (
               <button
                 onClick={() => navigate({ to: "/admin-panel" })}
                 className="rounded-xl bg-gradient-royal py-3 text-sm font-bold text-gold"
               >
                 الذهاب إلى لوحة التحكم
+              </button>
+            ) : (
+              <button
+                onClick={() => navigate({ to: "/pricing" })}
+                className="rounded-xl bg-gradient-gold py-3 text-sm font-bold"
+                style={{ color: "var(--royal-deep)" }}
+              >
+                عرض خطط الاشتراك
               </button>
             )}
             <Link to="/" className="rounded-xl border border-border py-3 text-sm font-bold hover:border-gold">العودة للرئيسية</Link>
@@ -80,7 +88,7 @@ function LoginPage() {
         if (error) throw error;
         toast.success("تم تسجيل الدخول بنجاح 🎉");
         if (cleanEmail === SUPER_ADMIN_EMAIL) navigate({ to: "/admin-panel" });
-        else navigate({ to: "/" });
+        else navigate({ to: "/pricing" });
       } else {
         const { error } = await supabase.auth.signUp({
           email: cleanEmail,
