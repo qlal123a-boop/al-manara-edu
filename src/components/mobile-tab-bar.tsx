@@ -2,7 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { Home, GraduationCap, Bot, Library, Menu } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 
-/** Primary destinations for the app-like mobile shell (existing routes only). */
+/** Primary destinations for the app-like mobile shell (excluding deleted sections). */
 const TABS = [
   { to: "/", key: "nav.home", icon: Home },
   { to: "/grades", key: "nav.grades", icon: GraduationCap },
