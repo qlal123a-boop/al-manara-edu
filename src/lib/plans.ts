@@ -54,6 +54,24 @@ function asFeatures(value: unknown): PlanFeature[] {
 
 /* ---------------------------------- tiers --------------------------------- */
 
+/**
+ * Fetches the user's current subscription plan from the database.
+ */
+export async function getUserPlan(userId: string): Promise<TierKey> {
+  try {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("plan")
+      .eq("id", userId)
+      .single();
+
+    if (error || !data) return "free";
+    return (data.plan as TierKey) || "free";
+  } catch {
+    return "free";
+  }
+}
+
 export function usePlanTiers() {
   const [tiers, setTiers] = useState<PlanTier[]>([]);
   const [loading, setLoading] = useState(true);
@@ -275,4 +293,7 @@ export async function saveAdminPrompt(row: Partial<AdminPrompt> & { title: strin
 export async function deleteAdminPrompt(id: string) {
   const { error } = await supabase.from("admin_prompts").delete().eq("id", id);
   return error;
+}
+",
+  "summary": "إضافة وظيفة getUserPlan لجلب نوع اشتراك المستخدم الحالي من قاعدة البيانات لدعم تدفق صفحة الأسعار الجديدة."
 }
