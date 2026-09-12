@@ -43,13 +43,14 @@ export const AI_ERROR_AR: Record<AiErrorCode, string> = {
 
 /** Free, vision-capable Gemini chain. Ordered fastest → most capable. */
 export const DEFAULT_MODELS = [
-  "google/gemini-3-flash-preview",
-  "google/gemini-2.5-flash",
-  "google/gemini-2.5-flash-lite",
-  "google/gemini-2.5-pro",
+  "google/gemini-2.0-flash",
+  "google/gemini-2.0-flash-lite-preview-02-05",
+  "google/gemini-1.5-flash",
+  "google/gemini-1.5-pro",
 ] as const;
 
-const ENDPOINT = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const LOVABLE_ENDPOINT = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models";
 
 /** Transient statuses worth retrying on the same model (proxy 407 included). */
 const RETRYABLE = new Set([407, 408, 409, 425, 429, 500, 502, 503, 504, 520, 522, 524]);
@@ -62,6 +63,48 @@ function codeForStatus(status: number): AiErrorCode {
   return "unavailable";
 }
 
+/**
+ * Logic to handle Google Gemini Native API structure vs OpenAI-compatible gateway.
+ */
+async function callGeminiDirect(
+  apiKey: string,
+  model: string,
+  opts: { messages: GatewayMessage[]; json?: boolean; timeoutMs: number }
+): Promise<AiResult> {
+  const modelId = model.replace("google/", "");
+  const url = `${GEMINI_ENDPOINT}/${modelId}:generateContent?key=${apiKey}`;
+
+  const contents = opts.messages.map((m) => ({
+    role: m.role === "assistant" ? "model" : "user",
+    parts: typeof m.content === "string" 
+      ? [{ text: m.content }] 
+      : m.content.map(p => p.type === "text" ? { text: p.text } : { inline_data: { mime_type: "image/jpeg", data: p.image_url.url.split(",")[1] } })
+  }));
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents,
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 4096,
+        ...(opts.json ? { responseMimeType: "application/json" } : {}),
+      },
+    }),
+  });
+
+  if (!res.ok) {
+    return { ok: false, code: codeForStatus(res.status), detail: `Gemini Direct ${res.status}` };
+  }
+
+  const json = await res.json();
+  const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
+  
+  if (text) return { ok: true, content: text, model };
+  return { ok: false, code: "empty", detail: "Gemini empty response" };
+}
+
 export async function callAiGateway(
   apiKey: string | undefined,
   opts: {
@@ -72,9 +115,14 @@ export async function callAiGateway(
     /** Attempts per model (1 = no retry). */
     attempts?: number;
     label?: string;
+    /** If provided, uses Google Gemini direct API instead of Lovable Gateway */
+    geminiApiKey?: string;
   },
 ): Promise<AiResult> {
-  if (!apiKey) return { ok: false, code: "no_key", detail: "LOVABLE_API_KEY missing" };
+  const useGeminiDirect = !!opts.geminiApiKey;
+  const effectiveKey = useGeminiDirect ? opts.geminiApiKey! : apiKey;
+
+  if (!effectiveKey) return { ok: false, code: "no_key", detail: "API Key missing" };
 
   const models = opts.models ?? DEFAULT_MODELS;
   const timeoutMs = opts.timeoutMs ?? 60_000;
@@ -89,41 +137,46 @@ export async function callAiGateway(
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), timeoutMs);
       try {
-        const res = await fetch(ENDPOINT, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${apiKey}`,
-          },
-          signal: controller.signal,
-          body: JSON.stringify({
-            model,
-            messages: opts.messages,
-            ...(opts.json ? { response_format: { type: "json_object" } } : {}),
-          }),
-        });
+        if (useGeminiDirect && model.startsWith("google/")) {
+          const directRes = await callGeminiDirect(effectiveKey, model, { ...opts, timeoutMs });
+          if (directRes.ok) return directRes;
+          lastCode = directRes.code;
+          lastDetail = directRes.detail;
+        } else {
+          const res = await fetch(LOVABLE_ENDPOINT, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${effectiveKey}`,
+            },
+            signal: controller.signal,
+            body: JSON.stringify({
+              model,
+              messages: opts.messages,
+              ...(opts.json ? { response_format: { type: "json_object" } } : {}),
+            }),
+          });
 
-        if (!res.ok) {
-          const body = (await res.text().catch(() => "")).slice(0, 500);
-          lastCode = codeForStatus(res.status);
-          lastDetail = `${model} → HTTP ${res.status} ${body}`;
-          console.error(`[${label}] gateway error`, lastDetail);
-          if (RETRYABLE.has(res.status) && attempt < attempts) {
-            await sleep(400 * 2 ** (attempt - 1));
-            continue;
+          if (!res.ok) {
+            const body = (await res.text().catch(() => "")).slice(0, 500);
+            lastCode = codeForStatus(res.status);
+            lastDetail = `${model} → HTTP ${res.status} ${body}`;
+            console.error(`[${label}] gateway error`, lastDetail);
+            if (RETRYABLE.has(res.status) && attempt < attempts) {
+              await sleep(400 * 2 ** (attempt - 1));
+              continue;
+            }
+            break;
           }
-          break; // non-retryable for this model → next model
-        }
 
-        const json = (await res.json()) as {
-          choices?: Array<{ message?: { content?: string } }>;
-        };
-        const content = json.choices?.[0]?.message?.content?.trim();
-        if (content) return { ok: true, content, model };
-        lastCode = "empty";
-        lastDetail = `${model} → empty completion`;
-        console.error(`[${label}] ${lastDetail}`);
-        break;
+          const json = (await res.json()) as {
+            choices?: Array<{ message?: { content?: string } }>;
+          };
+          const content = json.choices?.[0]?.message?.content?.trim();
+          if (content) return { ok: true, content, model };
+          lastCode = "empty";
+          lastDetail = `${model} → empty completion`;
+        }
       } catch (e) {
         const aborted = (e as Error)?.name === "AbortError";
         lastCode = aborted ? "timeout" : "unavailable";
@@ -165,10 +218,14 @@ export function parseJsonLoose<T>(raw: string): T | null {
 export async function generateGatewayImage(
   apiKey: string | undefined,
   prompt: string,
-  opts: { timeoutMs?: number; label?: string } = {},
+  opts: { timeoutMs?: number; label?: string; geminiApiKey?: string } = {},
 ): Promise<{ ok: true; dataUrl: string } | { ok: false; code: AiErrorCode; detail: string }> {
-  if (!apiKey) return { ok: false, code: "no_key", detail: "LOVABLE_API_KEY missing" };
-  const models = ["google/gemini-2.5-flash-image", "google/gemini-3-pro-image-preview"];
+  const useGeminiDirect = !!opts.geminiApiKey;
+  const effectiveKey = useGeminiDirect ? opts.geminiApiKey! : apiKey;
+
+  if (!effectiveKey) return { ok: false, code: "no_key", detail: "API Key missing" };
+  
+  const models = ["google/gemini-2.0-flash", "google/gemini-1.5-flash"];
   const timeoutMs = opts.timeoutMs ?? 90_000;
   const label = opts.label ?? "edu-image";
   let lastCode: AiErrorCode = "unavailable";
@@ -178,9 +235,9 @@ export async function generateGatewayImage(
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const res = await fetch(ENDPOINT, {
+      const res = await fetch(LOVABLE_ENDPOINT, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${effectiveKey}` },
         signal: controller.signal,
         body: JSON.stringify({
           model,
