@@ -103,7 +103,10 @@ ${data.imageDataUrl ? "اعتمد على صورة صفحة الكتاب المر
       },
     ];
 
-    const res = await callAiGateway(process.env.LOVABLE_API_KEY, {
+    // Use GEMINI_API_KEY if available, falling back to LOVABLE_API_KEY
+    const apiKey = process.env.VITE_GEMINI_API_KEY || process.env.LOVABLE_API_KEY;
+
+    const res = await callAiGateway(apiKey, {
       messages,
       json: true,
       label: "worksheet",
