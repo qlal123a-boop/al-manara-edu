@@ -150,7 +150,7 @@ function PricingPage() {
       </header>
 
       <div className="mx-auto mt-10 grid max-w-5xl gap-6 lg:grid-cols-2">
-        {/* Free */}
+        {/* Free Plan Card */}
         <section className="relative flex flex-col rounded-3xl border border-border bg-card p-6 shadow-card md:p-8">
           <div className="flex items-center gap-3">
             <div className="grid h-12 w-12 place-items-center rounded-2xl bg-secondary">
@@ -163,7 +163,7 @@ function PricingPage() {
           </div>
 
           <div className="mt-6 flex items-end gap-2">
-            <span className="text-5xl font-extrabold">$0</span>
+            <span className="text-5xl font-extrabold text-foreground">$0</span>
             <span className="pb-2 text-sm text-muted-foreground">/ شهريًا</span>
           </div>
 
@@ -177,7 +177,7 @@ function PricingPage() {
                 >
                   {f.ok ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
                 </span>
-                <span className={f.ok ? "" : "text-muted-foreground line-through"}>{f.label}</span>
+                <span className={f.ok ? "text-foreground" : "text-muted-foreground line-through"}>{f.label}</span>
               </li>
             ))}
           </ul>
@@ -185,7 +185,7 @@ function PricingPage() {
           <button
             onClick={chooseFree}
             disabled={busy !== null}
-            className="mt-7 inline-flex items-center justify-center gap-2 rounded-xl border border-border py-3.5 text-sm font-extrabold transition-smooth hover:border-gold disabled:opacity-60"
+            className="mt-7 inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-background py-3.5 text-sm font-extrabold transition-smooth hover:border-gold hover:text-gold disabled:opacity-60"
           >
             {busy === "free" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             متابعة بالمجاني
@@ -195,7 +195,7 @@ function PricingPage() {
           )}
         </section>
 
-        {/* Pro */}
+        {/* Pro Plan Card */}
         <section className="relative flex flex-col overflow-hidden rounded-3xl border-2 border-gold bg-gradient-royal p-6 text-primary-foreground shadow-luxury md:p-8">
           <span className="absolute end-6 top-6 rounded-full bg-gradient-gold px-3 py-1 text-[11px] font-extrabold" style={{ color: "var(--royal-deep)" }}>
             الأكثر اختيارًا
@@ -263,38 +263,46 @@ function PricingPage() {
           >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h3 className="text-lg font-extrabold">طلب الاشتراك في «منارة بلس»</h3>
+                <h3 className="text-lg font-extrabold text-foreground">طلب الاشتراك في «منارة بلس»</h3>
                 <p className="mt-1 text-xs text-muted-foreground">أدخل بياناتك، وسنفتح لك محادثة واتساب مع الإدارة لإتمام الاشتراك.</p>
               </div>
-              <button onClick={() => setProOpen(false)} aria-label="إغلاق" className="rounded-lg border border-border p-1.5">
+              <button onClick={() => setProOpen(false)} aria-label="إغلاق" className="rounded-lg border border-border p-1.5 text-muted-foreground hover:bg-secondary">
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <label className="mt-5 block text-xs font-bold">الصف الدراسي</label>
-            <input
-              value={grade}
-              onChange={(e) => setGrade(e.target.value)}
-              placeholder="مثال: الصف التاسع"
-              className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm"
-            />
+            <div className="mt-5 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-foreground">الصف الدراسي</label>
+                <input
+                  value={grade}
+                  onChange={(e) => setGrade(e.target.value)}
+                  placeholder="مثال: الصف التاسع"
+                  className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:border-gold focus:outline-none"
+                />
+              </div>
 
-            <label className="mt-4 block text-xs font-bold">العمر</label>
-            <input
-              value={age}
-              onChange={(e) => setAge(e.target.value.replace(/[^\d]/g, ""))}
-              inputMode="numeric"
-              placeholder="مثال: 15"
-              className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm"
-            />
+              <div>
+                <label className="block text-xs font-bold text-foreground">العمر</label>
+                <input
+                  value={age}
+                  onChange={(e) => setAge(e.target.value.replace(/[^\d]/g, ""))}
+                  inputMode="numeric"
+                  placeholder="مثال: 15"
+                  className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:border-gold focus:outline-none"
+                />
+              </div>
 
-            <label className="mt-4 block text-xs font-bold">ملاحظة (اختياري)</label>
-            <textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              rows={3}
-              className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm"
-            />
+              <div>
+                <label className="block text-xs font-bold text-foreground">ملاحظة (اختياري)</label>
+                <textarea
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  rows={3}
+                  className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:border-gold focus:outline-none"
+                />
+              </div>
+            </div>
 
             <button
               onClick={submitPro}
@@ -312,9 +320,11 @@ function PricingPage() {
         </div>
       )}
 
-      <p className="mx-auto mt-8 max-w-2xl text-center text-xs text-muted-foreground">
-        يمكنك تغيير خطتك في أي وقت من هذه الصفحة. الأسعار بالدولار الأمريكي وتشمل جميع التحديثات القادمة.
-      </p>
+      <footer className="mx-auto mt-12 max-w-2xl text-center">
+        <p className="text-xs text-muted-foreground">
+          يمكنك تغيير خطتك في أي وقت من هذه الصفحة. الأسعار بالدولار الأمريكي وتشمل جميع التحديثات القادمة.
+        </p>
+      </footer>
     </div>
   );
 }
