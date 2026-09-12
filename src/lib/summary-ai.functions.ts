@@ -91,7 +91,10 @@ ${data.imageDataUrl ? "اعتمد على صورة صفحة الكتاب المر
       },
     ];
 
-    const res = await callAiGateway(process.env.LOVABLE_API_KEY, {
+    // Use either Lovable API Key or Gemini API Key from environment
+    const apiKey = process.env.VITE_GEMINI_API_KEY || process.env.LOVABLE_API_KEY;
+
+    const res = await callAiGateway(apiKey, {
       messages,
       json: true,
       label: "summary",
