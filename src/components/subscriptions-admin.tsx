@@ -11,6 +11,8 @@ import {
   Sparkles,
   Trash2,
   X,
+  User,
+  ShieldCheck,
 } from "lucide-react";
 import {
   deleteAdminPrompt,
@@ -28,6 +30,7 @@ import {
   type PlanTier,
   type TierKey,
 } from "@/lib/plans";
+import { useProfile } from "@/lib/profile";
 
 const STATUS_AR: Record<string, string> = {
   pending: "قيد المراجعة",
@@ -125,6 +128,7 @@ export function SubscriptionRequestsTab() {
 
 export function PlansAdminTab() {
   const { tiers, loading, refresh } = usePlanTiers();
+  const { profile } = useProfile();
   const [draft, setDraft] = useState<Record<string, PlanTier>>({});
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -143,98 +147,121 @@ export function PlansAdminTab() {
 
   return (
     <section className="space-y-6">
-      <h2 className="text-lg font-extrabold">إدارة الخطط والمزايا</h2>
-      {loading && <p className="text-sm text-muted-foreground">جارٍ التحميل...</p>}
+      <div className="grid gap-6">
+        <div className="rounded-2xl border border-gold/30 bg-gradient-royal p-5 text-gold shadow-luxury">
+          <div className="flex items-center gap-3">
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-gold text-royal-deep">
+              <ShieldCheck className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-extrabold">نظام الاشتراكات الذكي</h2>
+              <p className="text-[11px] text-gold/70">تحكم في الأسعار والمزايا وقيود الذكاء الاصطناعي لكل خطة.</p>
+            </div>
+          </div>
+          {profile && (
+            <div className="mt-4 flex items-center gap-2 rounded-lg bg-white/5 p-3 text-xs">
+              <User className="h-4 w-4" />
+              <span>حالتك الحالية: <b className="text-primary-foreground">{profile.plan === "pro" ? "منارة بلس" : "خطة مجانية"}</b></span>
+            </div>
+          )}
+        </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        {tiers.map((t0) => {
-          const t = value(t0);
-          return (
-            <article key={t.tier} className="rounded-2xl border border-border bg-card p-4 shadow-card">
-              <h3 className="text-sm font-extrabold text-gold">
-                {t.tier === "pro" ? "منارة بلس (مدفوعة)" : "الخطة المجانية"}
-              </h3>
+        <h2 className="text-lg font-extrabold">إدارة الخطط والمزايا</h2>
+        {loading && <p className="text-sm text-muted-foreground">جارٍ التحميل...</p>}
 
-              <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                <label className="text-xs font-bold">
-                  الاسم
-                  <input className="input-field mt-1" value={t.title} onChange={(e) => patch(t0, { title: e.target.value })} />
-                </label>
-                <label className="text-xs font-bold">
-                  السعر
-                  <input className="input-field mt-1" value={t.price_label} onChange={(e) => patch(t0, { price_label: e.target.value })} />
-                </label>
-                <label className="text-xs font-bold sm:col-span-2">
-                  الوصف
-                  <input className="input-field mt-1" value={t.subtitle} onChange={(e) => patch(t0, { subtitle: e.target.value })} />
-                </label>
-                <label className="text-xs font-bold sm:col-span-2">
-                  حدّ أسئلة الذكاء الاصطناعي يوميًا (‎-1 = بلا حدود)
-                  <input
-                    type="number"
-                    className="input-field mt-1"
-                    value={t.daily_ai_limit}
-                    onChange={(e) => patch(t0, { daily_ai_limit: Number(e.target.value) })}
-                  />
-                </label>
-              </div>
-
-              <div className="mt-4">
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-xs font-extrabold">المزايا</span>
-                  <button
-                    onClick={() => patch(t0, { features: [...t.features, { label: "ميزة جديدة", included: true }] })}
-                    className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-[11px] font-bold hover:border-gold"
-                  >
-                    <Plus className="h-3 w-3" /> إضافة
-                  </button>
+        <div className="grid gap-4 lg:grid-cols-2">
+          {tiers.map((t0) => {
+            const t = value(t0);
+            return (
+              <article key={t.tier} className="relative flex flex-col rounded-2xl border border-border bg-card p-4 shadow-card">
+                <div className="flex items-center justify-between">
+                   <h3 className="text-sm font-extrabold text-gold">
+                    {t.tier === "pro" ? "منارة بلس (مدفوعة)" : "الخطة المجانية"}
+                  </h3>
+                  <span className="rounded-md bg-secondary px-2 py-0.5 text-[10px] font-bold text-muted-foreground uppercase">{t.tier}</span>
                 </div>
-                <div className="space-y-2">
-                  {t.features.map((f, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <button
-                        onClick={() => {
-                          const next = [...t.features];
-                          next[i] = { ...f, included: !f.included };
-                          patch(t0, { features: next });
-                        }}
-                        className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg ${
-                          f.included ? "bg-emerald-500/15 text-emerald-600" : "bg-muted text-muted-foreground"
-                        }`}
-                        title={f.included ? "متاحة" : "غير متاحة"}
-                      >
-                        {f.included ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
-                      </button>
-                      <input
-                        className="input-field flex-1"
-                        value={f.label}
-                        onChange={(e) => {
-                          const next = [...t.features];
-                          next[i] = { ...f, label: e.target.value };
-                          patch(t0, { features: next });
-                        }}
-                      />
-                      <button
-                        onClick={() => patch(t0, { features: t.features.filter((_, j) => j !== i) })}
-                        className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-border text-destructive hover:border-destructive"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
 
-              <button
-                onClick={() => save(t0)}
-                disabled={busy === t.tier}
-                className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-gradient-royal px-4 py-2 text-xs font-extrabold text-gold shadow-luxury disabled:opacity-60"
-              >
-                {busy === t.tier ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />} حفظ
-              </button>
-            </article>
-          );
-        })}
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  <label className="text-xs font-bold">
+                    الاسم
+                    <input className="input-field mt-1" value={t.title} onChange={(e) => patch(t0, { title: e.target.value })} />
+                  </label>
+                  <label className="text-xs font-bold">
+                    السعر
+                    <input className="input-field mt-1" value={t.price_label} onChange={(e) => patch(t0, { price_label: e.target.value })} />
+                  </label>
+                  <label className="text-xs font-bold sm:col-span-2">
+                    الوصف
+                    <input className="input-field mt-1" value={t.subtitle} onChange={(e) => patch(t0, { subtitle: e.target.value })} />
+                  </label>
+                  <label className="text-xs font-bold sm:col-span-2">
+                    حدّ أسئلة الذكاء الاصطناعي يوميًا (‎-1 = بلا حدود)
+                    <input
+                      type="number"
+                      className="input-field mt-1"
+                      value={t.daily_ai_limit}
+                      onChange={(e) => patch(t0, { daily_ai_limit: Number(e.target.value) })}
+                    />
+                  </label>
+                </div>
+
+                <div className="mt-4 flex-1">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-xs font-extrabold">المزايا</span>
+                    <button
+                      onClick={() => patch(t0, { features: [...t.features, { label: "ميزة جديدة", included: true }] })}
+                      className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-[11px] font-bold hover:border-gold"
+                    >
+                      <Plus className="h-3 w-3" /> إضافة
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {t.features.map((f, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            const next = [...t.features];
+                            next[i] = { ...f, included: !f.included };
+                            patch(t0, { features: next });
+                          }}
+                          className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg ${
+                            f.included ? "bg-emerald-500/15 text-emerald-600" : "bg-muted text-muted-foreground"
+                          }`}
+                          title={f.included ? "متاحة" : "غير متاحة"}
+                        >
+                          {f.included ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
+                        </button>
+                        <input
+                          className="input-field flex-1"
+                          value={f.label}
+                          onChange={(e) => {
+                            const next = [...t.features];
+                            next[i] = { ...f, label: e.target.value };
+                            patch(t0, { features: next });
+                          }}
+                        />
+                        <button
+                          onClick={() => patch(t0, { features: t.features.filter((_, j) => j !== i) })}
+                          className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-border text-destructive hover:border-destructive"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => save(t0)}
+                  disabled={busy === t.tier}
+                  className="mt-4 inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-royal px-4 py-2 text-xs font-extrabold text-gold shadow-luxury disabled:opacity-60"
+                >
+                  {busy === t.tier ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />} حفظ التعديلات
+                </button>
+              </article>
+            );
+          })}
+        </div>
       </div>
 
       <FeatureFlagsEditor />
