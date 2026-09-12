@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { GraduationCap, LogIn, ShieldCheck, Menu, X, LogOut, Languages, RefreshCw } from "lucide-react";
+import { GraduationCap, LogIn, ShieldCheck, Menu, X, LogOut, Languages, RefreshCw, CreditCard } from "lucide-react";
 import { useState } from "react";
 import { useAuthUser, signOut } from "@/lib/use-auth";
 import { useI18n } from "@/lib/i18n";
@@ -9,6 +9,7 @@ import { ArabicClock } from "@/components/arabic-clock";
 
 const NAV = [
   { to: "/", key: "nav.home" },
+  { to: "/pricing", key: "الاشتراكات" },
   { to: "/grades", key: "nav.grades" },
   { to: "/courses", key: "nav.courses" },
   { to: "/summaries", key: "nav.summaries" },
@@ -69,7 +70,7 @@ export function SiteHeader() {
                 }`}
                 style={active ? { color: "var(--royal-deep)", backgroundColor: "var(--gold)" } : undefined}
               >
-                {t(n.key)}
+                {n.key.startsWith("nav.") ? t(n.key) : n.key}
               </Link>
             );
           })}
@@ -94,6 +95,10 @@ export function SiteHeader() {
           </button>
 
           <NotificationBell />
+
+          <Link to="/pricing" className="hidden items-center gap-2 rounded-xl border border-gold/40 bg-white/5 px-3 py-2 text-xs font-bold text-gold transition-smooth hover:bg-white/10 sm:inline-flex md:text-sm">
+            <CreditCard className="h-4 w-4" /> الخطط
+          </Link>
 
           {isSuperAdmin && (
             <Link to="/admin-panel" className="hidden items-center gap-2 rounded-xl border border-gold/40 bg-white/5 px-3 py-2 text-xs font-bold text-gold transition-smooth hover:bg-white/10 sm:inline-flex md:text-sm">
@@ -145,13 +150,10 @@ export function SiteHeader() {
                   }`}
                   style={active ? { color: "var(--royal-deep)", backgroundColor: "var(--gold)" } : undefined}
                 >
-                  {t(n.key)}
+                  {n.key.startsWith("nav.") ? t(n.key) : n.key}
                 </Link>
               );
             })}
-            <Link to="/pricing" onClick={() => setOpen(false)} className="rounded-lg border border-gold/30 px-3 py-2 text-center text-sm font-semibold text-gold">
-              الخطط
-            </Link>
             <Link to="/moderator-request" onClick={() => setOpen(false)} className="rounded-lg border border-gold/30 px-3 py-2 text-center text-sm font-semibold text-gold">
               {t("nav.join")}
             </Link>
