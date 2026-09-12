@@ -44,6 +44,7 @@ function LoginPage() {
                 الذهاب إلى لوحة التحكم
               </button>
             )}
+            <Link to="/pricing" className="rounded-xl bg-gradient-gold py-3 text-sm font-bold shadow-gold transition-smooth hover:scale-[1.02]" style={{ color: "var(--royal-deep)" }}>استكشاف خطط الاشتراك</Link>
             <Link to="/" className="rounded-xl border border-border py-3 text-sm font-bold hover:border-gold">العودة للرئيسية</Link>
             <button onClick={async () => { await signOut(); toast.success("تم تسجيل الخروج"); }} className="rounded-xl border border-border py-3 text-sm font-bold hover:border-destructive hover:text-destructive">
               تسجيل الخروج
@@ -80,7 +81,7 @@ function LoginPage() {
         if (error) throw error;
         toast.success("تم تسجيل الدخول بنجاح 🎉");
         if (cleanEmail === SUPER_ADMIN_EMAIL) navigate({ to: "/admin-panel" });
-        else navigate({ to: "/" });
+        else navigate({ to: "/pricing" });
       } else {
         const { error } = await supabase.auth.signUp({
           email: cleanEmail,
