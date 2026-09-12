@@ -24,12 +24,14 @@ export type BrandSettings = {
   whatsapp: string;
   facebook: string;
   jerusalem_icon_url: string;
+  gemini_api_key?: string;
 };
 
 export const DEFAULT_BRAND: BrandSettings = {
   name: "المنارة - المنصة التعليمية الفلسطينية",
   logo_url: "", contact_email: "info@al-manara.ps",
   contact_phone: "", whatsapp: "", facebook: "", jerusalem_icon_url: "",
+  gemini_api_key: "",
 };
 
 function useSettingValue<T>(key: string, fallback: T) {
@@ -227,4 +229,7 @@ export function useVisitorPing() {
       if (error) console.warn("[visitor]", error.message);
     });
   }, []);
+}
+",
+  "summary": "إضافة حقل gemini_api_key إلى BrandSettings و DEFAULT_BRAND لتمكين إدارة مفتاح Google Gemini من واجهة الإعدادات."
 }
