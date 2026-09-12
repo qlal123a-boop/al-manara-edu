@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { GraduationCap, LogIn, ShieldCheck, Menu, X, LogOut, Languages, RefreshCw } from "lucide-react";
+import { GraduationCap, LogIn, ShieldCheck, Menu, X, LogOut, Languages, RefreshCw, CreditCard } from "lucide-react";
 import { useState } from "react";
 import { useAuthUser, signOut } from "@/lib/use-auth";
 import { useI18n } from "@/lib/i18n";
@@ -16,6 +16,7 @@ const NAV = [
   { to: "/library", key: "nav.library" },
   { to: "/smart-board", key: "nav.smartBoard" },
   { to: "/tutor", key: "nav.tutor" },
+  { to: "/pricing", key: "nav.pricing", label: "خطط الاشتراك" },
   { to: "/quiz-generator", key: "nav.quiz" },
   { to: "/pomodoro", key: "nav.pomodoro" },
   { to: "/games", key: "nav.games" },
@@ -58,18 +59,18 @@ export function SiteHeader() {
         </Link>
 
         <nav className="hidden items-center gap-1 xl:flex">
-          {NAV.slice(0, 8).map((n) => {
+          {NAV.slice(0, 9).map((n) => {
             const active = path === n.to;
             return (
               <Link
                 key={n.to}
                 to={n.to}
-                className={`rounded-lg px-3 py-2 text-sm font-semibold transition-smooth ${
+                className={`rounded-lg px-3 py-2 text-sm font-semibold transition-smooth ${n.to === "/pricing" ? "text-gold border border-gold/30" : ""} ${
                   active ? "shadow-gold" : "text-primary-foreground/85 hover:bg-white/10 hover:text-gold"
                 }`}
                 style={active ? { color: "var(--royal-deep)", backgroundColor: "var(--gold)" } : undefined}
               >
-                {t(n.key)}
+                {"label" in n ? n.label : t(n.key)}
               </Link>
             );
           })}
@@ -140,18 +141,15 @@ export function SiteHeader() {
                   key={n.to}
                   to={n.to}
                   onClick={() => setOpen(false)}
-                  className={`rounded-lg px-3 py-2 text-center text-sm font-semibold transition-smooth ${
+                  className={`rounded-lg px-3 py-2 text-center text-sm font-semibold transition-smooth ${n.to === "/pricing" ? "bg-gold/10 border-gold/40" : ""} ${
                     active ? "" : "border border-gold/30 text-gold hover:bg-white/10"
                   }`}
                   style={active ? { color: "var(--royal-deep)", backgroundColor: "var(--gold)" } : undefined}
                 >
-                  {t(n.key)}
+                  {"label" in n ? n.label : t(n.key)}
                 </Link>
               );
             })}
-            <Link to="/pricing" onClick={() => setOpen(false)} className="rounded-lg border border-gold/30 px-3 py-2 text-center text-sm font-semibold text-gold">
-              الخطط
-            </Link>
             <Link to="/moderator-request" onClick={() => setOpen(false)} className="rounded-lg border border-gold/30 px-3 py-2 text-center text-sm font-semibold text-gold">
               {t("nav.join")}
             </Link>
