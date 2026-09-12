@@ -150,7 +150,7 @@ function PricingPage() {
       </header>
 
       <div className="mx-auto mt-10 grid max-w-5xl gap-6 lg:grid-cols-2">
-        {/* Free */}
+        {/* Free Plan */}
         <section className="relative flex flex-col rounded-3xl border border-border bg-card p-6 shadow-card md:p-8">
           <div className="flex items-center gap-3">
             <div className="grid h-12 w-12 place-items-center rounded-2xl bg-secondary">
@@ -163,7 +163,7 @@ function PricingPage() {
           </div>
 
           <div className="mt-6 flex items-end gap-2">
-            <span className="text-5xl font-extrabold">$0</span>
+            <span className="text-5xl font-extrabold text-foreground">$0</span>
             <span className="pb-2 text-sm text-muted-foreground">/ شهريًا</span>
           </div>
 
@@ -177,7 +177,7 @@ function PricingPage() {
                 >
                   {f.ok ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
                 </span>
-                <span className={f.ok ? "" : "text-muted-foreground line-through"}>{f.label}</span>
+                <span className={f.ok ? "text-foreground" : "text-muted-foreground line-through"}>{f.label}</span>
               </li>
             ))}
           </ul>
@@ -185,28 +185,28 @@ function PricingPage() {
           <button
             onClick={chooseFree}
             disabled={busy !== null}
-            className="mt-7 inline-flex items-center justify-center gap-2 rounded-xl border border-border py-3.5 text-sm font-extrabold transition-smooth hover:border-gold disabled:opacity-60"
+            className="mt-7 inline-flex items-center justify-center gap-2 rounded-xl border border-border py-3.5 text-sm font-extrabold transition-smooth hover:border-gold hover:bg-gold/5 disabled:opacity-60"
           >
             {busy === "free" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            متابعة بالمجاني
+            ابدأ الآن مجانًا
           </button>
           {plan === "free" && profile?.onboarded && (
-            <p className="mt-3 text-center text-xs font-bold text-muted-foreground">خطتك الحالية</p>
+            <p className="mt-3 text-center text-xs font-bold text-emerald-600">خطة فعالة حالياً</p>
           )}
         </section>
 
-        {/* Pro */}
+        {/* Pro Plan */}
         <section className="relative flex flex-col overflow-hidden rounded-3xl border-2 border-gold bg-gradient-royal p-6 text-primary-foreground shadow-luxury md:p-8">
           <span className="absolute end-6 top-6 rounded-full bg-gradient-gold px-3 py-1 text-[11px] font-extrabold" style={{ color: "var(--royal-deep)" }}>
-            الأكثر اختيارًا
+            الأكثر تميزاً
           </span>
           <div className="flex items-center gap-3">
             <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-gold" style={{ color: "var(--royal-deep)" }}>
               <Crown className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="text-xl font-extrabold text-gold">منارة بلس</h2>
-              <p className="text-xs text-primary-foreground/70">لكل طالب يريد التفوّق فعلًا</p>
+              <h2 className="text-xl font-extrabold text-gold">خطة منارة بلس (Pro)</h2>
+              <p className="text-xs text-primary-foreground/70">لكل طالب يسعى للتفوق الدراسي</p>
             </div>
           </div>
 
@@ -245,7 +245,7 @@ function PricingPage() {
             style={{ color: "var(--royal-deep)" }}
           >
             {busy === "pro" ? <Loader2 className="h-4 w-4 animate-spin" /> : <InfinityIcon className="h-4 w-4" />}
-            اشترك الآن
+            اشترك الآن في بلس
           </button>
           {plan === "pro" && (
             <p className="mt-3 inline-flex items-center justify-center gap-1.5 text-center text-xs font-bold text-gold">
