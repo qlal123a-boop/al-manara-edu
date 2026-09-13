@@ -3,6 +3,14 @@
   "private": true,
   "sideEffects": false,
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/qlal123a-boop/renew-rebuild-remake.git"
+  },
+  "bugs": {
+    "url": "https://github.com/qlal123a-boop/renew-rebuild-remake/issues"
+  },
+  "homepage": "https://github.com/qlal123a-boop/renew-rebuild-remake#readme",
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
