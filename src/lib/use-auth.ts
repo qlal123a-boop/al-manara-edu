@@ -13,13 +13,17 @@ export function useAuthUser() {
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
       
-      // Log the event for flow debugging if needed
-      if (event === "SIGNED_IN") {
+      // Ensure loading is handled during sign in events
+      if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
+        setLoading(false);
+      }
+      if (event === "SIGNED_OUT") {
+        setUser(null);
         setLoading(false);
       }
     });
 
-    // Check current session
+    // Check current session on mount
     supabase.auth.getSession().then(({ data }) => {
       setUser(data.session?.user ?? null);
       setLoading(false);
@@ -30,12 +34,16 @@ export function useAuthUser() {
 
   const isSuperAdmin = !!user && user.email?.toLowerCase() === SUPER_ADMIN_EMAIL;
 
-  return { 
-    user, 
-    loading, 
+  return {
+    user,
+    loading,
     isSuperAdmin,
-    // Helper to determine if a user should be pushed to pricing
-    needsOnboarding: user && !isSuperAdmin
+    /**
+     * needsPlansRedirect: Boolean
+     * Returns true if a regular user (not super admin) just logged in
+     * and should be directed to the /plans selection page.
+     */
+    needsPlansRedirect: !!user && !isSuperAdmin,
   };
 }
 
