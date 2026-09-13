@@ -10,6 +10,7 @@ export type PlanTier = {
   title: string;
   subtitle: string;
   price_label: string;
+  price_ils: number;
   daily_ai_limit: number;
   features: PlanFeature[];
   limits: Record<string, boolean | number | string>;
@@ -30,6 +31,8 @@ export type ProRequest = {
   display_name: string | null;
   grade: string | null;
   age: number | null;
+  duration_months: number;
+  total_price: number;
   note: string | null;
   status: "pending" | "approved" | "rejected" | string;
   created_at: string;
@@ -52,6 +55,11 @@ function asFeatures(value: unknown): PlanFeature[] {
     .map((f) => ({ label: String(f.label ?? ""), included: Boolean(f.included) }));
 }
 
+/* ---------------------------------- config --------------------------------- */
+
+export const EXCHANGE_RATE_ILS = 3.6; // 1 USD = 3.6 ILS roughly, or as requested (3 ILS for Pro)
+export const PRO_MONTHLY_PRICE_ILS = 3;
+
 /* ---------------------------------- tiers --------------------------------- */
 
 export function usePlanTiers() {
@@ -66,6 +74,7 @@ export function usePlanTiers() {
           ...t,
           features: asFeatures(t.features),
           limits: (t.limits ?? {}) as PlanTier["limits"],
+          price_ils: t.price_ils ?? (t.tier === 'pro' ? PRO_MONTHLY_PRICE_ILS : 0),
         })),
       );
     }
@@ -88,6 +97,7 @@ export async function savePlanTier(tier: PlanTier) {
       title: tier.title,
       subtitle: tier.subtitle,
       price_label: tier.price_label,
+      price_ils: tier.price_ils,
       daily_ai_limit: tier.daily_ai_limit,
       features: tier.features as unknown as never,
       limits: tier.limits as unknown as never,
@@ -165,6 +175,8 @@ export async function createProRequest(input: {
   display_name: string | null;
   grade: string;
   age: number | null;
+  duration_months: number;
+  total_price: number;
   note?: string;
 }) {
   const { data, error } = await supabase
@@ -275,4 +287,7 @@ export async function saveAdminPrompt(row: Partial<AdminPrompt> & { title: strin
 export async function deleteAdminPrompt(id: string) {
   const { error } = await supabase.from("admin_prompts").delete().eq("id", id);
   return error;
+}
+",
+  "summary": "تحديث تعريفات الخطط والاشتراكات لتشمل الأسعار بالشيكل، مدة الاشتراك، وحساب التكلفة الكلية للطلبات الجديدة."
 }
