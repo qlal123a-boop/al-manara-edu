@@ -105,7 +105,7 @@ export function SiteHeader() {
               <LogOut className="h-4 w-4" /> <span className="hidden sm:inline">{t("auth.logout")}</span>
             </button>
           ) : (
-            <Link to="/login" className="inline-flex items-center gap-2 rounded-xl bg-gradient-gold px-2.5 py-2 text-xs font-bold shadow-gold transition-smooth hover:scale-[1.03] md:px-4 md:text-sm" style={{ color: "var(--royal-deep)" }}>
+            <Link to="/login" className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-2.5 py-2 text-xs font-bold text-white shadow-lg shadow-emerald-900/20 transition-all duration-300 hover:bg-emerald-500 hover:scale-[1.05] hover:shadow-emerald-500/30 active:scale-95 md:px-5 md:text-sm">
               <LogIn className="h-4 w-4" /> <span className="hidden sm:inline">{t("auth.login")}</span>
             </Link>
           )}
