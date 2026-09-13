@@ -81,7 +81,6 @@ function LoginPage() {
         if (error) throw error;
         toast.success("تم تسجيل الدخول بنجاح 🎉");
         
-        // Redirect flow: Super admin to panel, all others to plans selection
         if (cleanEmail === SUPER_ADMIN_EMAIL) {
             navigate({ to: "/admin-panel" });
         } else {
@@ -119,21 +118,21 @@ function LoginPage() {
         </p>
 
         <div className="mt-5 inline-flex w-full rounded-xl border border-border bg-secondary p-1">
-          <button type="button" onClick={() => setMode("signin")} className={`flex-1 rounded-lg py-2 text-xs font-bold ${mode === "signin" ? "bg-gradient-royal text-gold" : "text-muted-foreground"}`}>دخول</button>
-          <button type="button" onClick={() => setMode("signup")} className={`flex-1 rounded-lg py-2 text-xs font-bold ${mode === "signup" ? "bg-gradient-royal text-gold" : "text-muted-foreground"}`}>إنشاء حساب</button>
+          <button type="button" onClick={() => setMode("signin")} className={`flex-1 rounded-lg py-2 text-xs font-bold transition-all ${mode === "signin" ? "bg-emerald-600 text-white shadow-md shadow-emerald-900/20" : "text-muted-foreground hover:bg-emerald-500/10"}`}>{mode === "signin" ? "دخول" : "تبديل للدخول"}</button>
+          <button type="button" onClick={() => setMode("signup")} className={`flex-1 rounded-lg py-2 text-xs font-bold transition-all ${mode === "signup" ? "bg-emerald-600 text-white shadow-md shadow-emerald-900/20" : "text-muted-foreground hover:bg-emerald-500/10"}`}>{mode === "signup" ? "إنشاء" : "تبديل للإنشاء"}</button>
         </div>
 
-        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="البريد الإلكتروني" className="mt-4 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-gold" autoComplete="email" />
-        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="كلمة المرور" className="mt-3 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-gold" autoComplete={mode === "signin" ? "current-password" : "new-password"} />
+        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="البريد الإلكتروني" className="mt-4 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-emerald-500 transition-colors" autoComplete="email" />
+        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="كلمة المرور" className="mt-3 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-emerald-500 transition-colors" autoComplete={mode === "signin" ? "current-password" : "new-password"} />
 
-        <button disabled={busy} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-gold py-3 text-sm font-bold shadow-gold transition-smooth hover:scale-[1.02] disabled:opacity-60" style={{ color: "var(--royal-deep)" }}>
-          {mode === "signin" ? <LogIn className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
-          {busy ? "..." : mode === "signin" ? "دخول" : "إنشاء"}
+        <button disabled={busy} className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white py-3 text-sm font-bold shadow-lg shadow-emerald-900/20 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60">
+          {busy ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" /> : mode === "signin" ? <LogIn className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
+          {busy ? "جاري التنفيذ..." : mode === "signin" ? "تسجيل الدخول" : "إنشاء حساب جديد"}
         </button>
 
         {mode === "signup" && (
-          <div className="mt-4 rounded-xl border border-gold/30 bg-gold/5 p-3 text-[11px] leading-relaxed text-muted-foreground">
-            <div className="mb-1 font-extrabold text-gold">خطوات إنشاء الحساب:</div>
+          <div className="mt-4 rounded-xl border border-emerald-600/20 bg-emerald-600/5 p-3 text-[11px] leading-relaxed text-muted-foreground">
+            <div className="mb-1 font-extrabold text-emerald-600">خطوات إنشاء الحساب:</div>
             <ol className="list-decimal space-y-0.5 pe-4">
               <li>اكتب بريدك الإلكتروني وكلمة مرور (8 أحرف فأكثر).</li>
               <li>اضغط «إنشاء».</li>
@@ -143,8 +142,8 @@ function LoginPage() {
           </div>
         )}
 
-        <div className="mt-4 text-center text-[11px] text-muted-foreground">
-          تريد الانضمام كمشرف؟ <Link to="/moderator-request" className="font-bold text-primary underline">قدّم طلبك هنا</Link>
+        <div className="mt-6 text-center text-[11px] text-muted-foreground">
+          تريد الانضمام كمشرف؟ <Link to="/moderator-request" className="font-bold text-emerald-600 hover:underline">قدّم طلبك هنا</Link>
         </div>
       </form>
     </div>
