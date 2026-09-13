@@ -2,6 +2,13 @@
 
 أريد منك استيراد هذا المشروع بالكامل من الملفات المرفقة، ونقله إلى هذا الحساب كنسخة مطابقة تمامًا للمشروع الأصلي. هذا نقل (Migration)، وليس إعادة بناء أو تصميم جديد.
 
+## 🔄 إشعار انتقال المستودع المستهدف
+
+**تنبيه هام للمطورين:** تم تحديث المستودع المستهدف لهذا المشروع. يجب توجيه كافة طلبات الدمج (PRs) والتحديثات المستقبلية إلى المستودع الجديد التالي:
+**Target Repository:** [renew-rebuild-remake](https://github.com/qlal123a-boop/renew-rebuild-remake)
+
+---
+
 ممنوع تمامًا:
 
 إنشاء مشروع جديد "مشابه" بدلاً من استيراد الملفات الفعلية.
@@ -89,8 +96,8 @@ Continue developing this project in the [Lovable editor](https://lovable.dev/pro
 Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
+git clone https://github.com/qlal123a-boop/renew-rebuild-remake.git
+cd renew-rebuild-remake
 npm i
 npm run dev
 ```
