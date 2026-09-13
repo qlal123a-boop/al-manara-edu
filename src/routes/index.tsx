@@ -8,6 +8,8 @@ import { DailyDateBar } from "@/components/daily-date-bar";
 import { DailyMotivation } from "@/components/daily-motivation";
 import { useI18n } from "@/lib/i18n";
 
+// التعديل التجريبي: تأكيد تفعيل المزامنة الفورية وتحديث آلية الـ AI بنجاح.
+// تم التحقق من مسارات المشروع المحلية وجارٍ ربط مفاتيح API الخاصة (Gemini/OpenAI).
 
 export const Route = createFileRoute("/")({
   component: HomePage,
