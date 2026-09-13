@@ -9,18 +9,34 @@ export function useAuthUser() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+    // Listen for auth changes
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
+      
+      // Log the event for flow debugging if needed
+      if (event === "SIGNED_IN") {
+        setLoading(false);
+      }
     });
+
+    // Check current session
     supabase.auth.getSession().then(({ data }) => {
       setUser(data.session?.user ?? null);
       setLoading(false);
     });
+
     return () => sub.subscription.unsubscribe();
   }, []);
 
   const isSuperAdmin = !!user && user.email?.toLowerCase() === SUPER_ADMIN_EMAIL;
-  return { user, loading, isSuperAdmin };
+
+  return { 
+    user, 
+    loading, 
+    isSuperAdmin,
+    // Helper to determine if a user should be pushed to pricing
+    needsOnboarding: user && !isSuperAdmin
+  };
 }
 
 export async function signOut() {

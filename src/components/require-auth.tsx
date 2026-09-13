@@ -1,12 +1,24 @@
-import { Link, useLocation } from "@tanstack/react-router";
-import { Lock, LogIn } from "lucide-react";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
+import { Lock, LogIn, Sparkles } from "lucide-react";
 import { useAuthUser } from "@/lib/use-auth";
+import { useProfile } from "@/lib/profile";
+import { useEffect } from "react";
 
 export function RequireAuth({ children, title = "هذه الأداة للطلاب المسجّلين" }: { children: React.ReactNode; title?: string }) {
   const { user, loading } = useAuthUser();
+  const { profile, loading: profileLoading } = useProfile();
   const location = useLocation();
+  const navigate = useNavigate();
 
-  if (loading) {
+  useEffect(() => {
+    // Redirect to pricing if user is logged in but hasn't completed onboarding/plan selection
+    // Only if they aren't already on the pricing page
+    if (user && !profileLoading && profile && !profile.onboarded && location.pathname !== "/pricing") {
+      navigate({ to: "/pricing" });
+    }
+  }, [user, profile, profileLoading, location.pathname, navigate]);
+
+  if (loading || profileLoading) {
     return <div className="p-12 text-center text-muted-foreground">جارٍ التحقق من الجلسة...</div>;
   }
 
@@ -32,6 +44,21 @@ export function RequireAuth({ children, title = "هذه الأداة للطلا�
           <Link to="/" className="mt-3 inline-block text-xs font-bold text-muted-foreground hover:text-primary">
             العودة للرئيسية
           </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // If user is authenticated but hasn't chosen a plan, show a redirecting state
+  // This prevents content flash before the useEffect takes over
+  if (profile && !profile.onboarded && location.pathname !== "/pricing") {
+    return (
+      <div className="mx-auto flex min-h-[60vh] max-w-md items-center px-5 text-center">
+        <div className="w-full space-y-4">
+          <div className="mx-auto grid h-12 w-12 animate-pulse place-items-center rounded-full bg-gold/20 text-gold">
+            <Sparkles className="h-6 w-6" />
+          </div>
+          <p className="text-sm font-bold text-muted-foreground">جارٍ توجيهك لاختيار خطة الاشتراك...</p>
         </div>
       </div>
     );

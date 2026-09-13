@@ -58,7 +58,18 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   );
 }
 
-export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+/**
+ * Defined the router context type including plan status for global redirection logic
+ */
+export interface RouterContext {
+  queryClient: QueryClient;
+  auth?: {
+    planSelected: boolean;
+    isPro: boolean;
+  };
+}
+
+export const Route = createRootRouteWithContext<RouterContext>()({
   head: () => ({
     meta: [
       { charSet: "utf-8" },

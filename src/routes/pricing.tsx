@@ -12,6 +12,7 @@ import {
   Palette,
   Sparkles,
   X,
+  ArrowLeft,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useProfile } from "@/lib/profile";
@@ -23,15 +24,13 @@ export const Route = createFileRoute("/pricing")({
   component: PricingPage,
   head: () => ({
     meta: [
-      { title: "خطط الاشتراك — المنارة التعليمية" },
+      { title: "اختيار خطة الاشتراك — المنارة" },
       {
         name: "description",
-        content: "اختر خطتك في المنارة: خطة مجانية بأدوات أساسية، أو منارة بلس بدولار واحد شهريًا لمساعد ذكي غير محدود ولوح ذكي احترافي.",
+        content: "ابدأ رحلتك التعليمية باختيار الخطة المناسبة لك في منصة المنارة.",
       },
       { property: "og:title", content: "خطط الاشتراك — المنارة التعليمية" },
-      { property: "og:description", content: "خطة مجانية أو منارة بلس بـ 1$ شهريًا: مساعد ذكي بلا حدود، مستشار دراسي، ولوح ذكي احترافي." },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
 });
@@ -40,22 +39,18 @@ const FREE_FEATURES = [
   { label: "المساعد الذكي — ٥ أسئلة يوميًا", ok: true },
   { label: "المستشار الدراسي — محادثة أساسية", ok: true },
   { label: "اللوح الذكي — قلم وألوان أساسية", ok: true },
-  { label: "الملخصات وأوراق العمل — عدد محدود يوميًا", ok: true },
-  { label: "المكتبة والدروس والقنوات التعليمية", ok: true },
   { label: "تنزيل PDF غير محدود", ok: false },
   { label: "تشخيص متقدّم ومتابعة مستمرة", ok: false },
-  { label: "اللوح الذكي Pro (ملء الشاشة والفرش المتقدمة)", ok: false },
+  { label: "اللوح الذكي Pro الاحترافي", ok: false },
 ];
 
 const PRO_FEATURES = [
   "المساعد الذكي بلا حدود — أسئلة غير محدودة",
-  "المستشار الدراسي الكامل: تشخيص المشكلات ومتابعة مستمرة",
-  "اللوح الذكي Pro: ملء الشاشة، فرش متقدمة، منتقي ألوان مخصّص",
-  "توليد ملخصات وأوراق عمل واختبارات بلا حدود",
-  "تنزيل وطباعة PDF بلا حدود",
-  "صور ورسوم تعليمية مولّدة تلقائيًا حسب الدرس",
-  "أولوية في السرعة ودعم أسرع",
-  "شهادات إتمام بتصاميم مميّزة",
+  "المستشار الدراسي الكامل مع تشخيص ذكي",
+  "اللوح الذكي Pro: ملء الشاشة وفرش متقدمة",
+  "توليد ملخصات واختبارات بلا حدود",
+  "تنزيل وطباعة ملفات PDF بلا حدود",
+  "أولوية في الدعم الفني والسرعة",
 ];
 
 function PricingPage() {
@@ -78,7 +73,7 @@ function PricingPage() {
     setBusy("free");
     try {
       await update.mutateAsync({ plan: "free", onboarded: true, plan_started_at: null });
-      toast.success("تم المتابعة بالخطة المجانية");
+      toast.success("تم تفعيل الخطة المجانية بنجاح");
       navigate({ to: "/" });
     } catch {
       toast.error("تعذّر حفظ الخطة، حاول مجددًا");
@@ -122,12 +117,12 @@ function PricingPage() {
         `البريد: ${user.email ?? "-"}`,
         `الصف: ${grade.trim()}`,
         age ? `العمر: ${age}` : "",
-        note.trim() ? `ملاحظة: ${note.trim()}` : "",
       ].filter(Boolean).join("\n");
 
       window.open(buildWhatsAppLink(brand.whatsapp || brand.contact_phone || "", msg), "_blank", "noopener");
-      toast.success("تم إرسال طلبك — سيتم تفعيل الاشتراك بعد موافقة الإدارة");
+      toast.success("تم إرسال طلبك — سيتم التواصل معك للتفعيل");
       setProOpen(false);
+      navigate({ to: "/" });
     } catch {
       toast.error("تعذّر إرسال الطلب، حاول مجددًا");
     } finally {
@@ -135,49 +130,48 @@ function PricingPage() {
     }
   };
 
-
   return (
-    <div className="page-shell py-10 md:py-16">
+    <div className="page-shell py-10 md:py-16 animate-in fade-in duration-700">
       <header className="mx-auto max-w-2xl text-center">
         <span className="inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/10 px-4 py-1.5 text-xs font-bold text-gold">
-          <Sparkles className="h-3.5 w-3.5" /> {profile && !profile.onboarded ? "الخطوة ٢ من ٢" : "خطط الاشتراك"}
+          <Sparkles className="h-3.5 w-3.5" /> {profile && !profile.onboarded ? "الخطوة الأخيرة" : "خطط الاشتراك"}
         </span>
-        <h1 className="mt-4 text-3xl font-extrabold md:text-5xl">اختر خطتك المناسبة</h1>
-        <p className="mt-3 text-sm text-muted-foreground md:text-base">
-          ابدأ مجانًا اليوم، أو افتح كل أدوات المنارة الذكية بأقل من فنجان قهوة شهريًا.
+        <h1 className="mt-4 text-3xl font-extrabold md:text-5xl tracking-tight bg-gradient-to-b from-foreground to-foreground/70 bg-clip-text text-transparent">
+          اختر مسارك التعليمي
+        </h1>
+        <p className="mt-3 text-sm text-muted-foreground md:text-base max-w-lg mx-auto">
+          قبل البدء، اختر الخطة التي تناسب احتياجاتك الدراسية. يمكنك دائمًا الترقية لاحقًا.
         </p>
-        <div className="gold-divider mx-auto mt-5 w-24" />
+        <div className="gold-divider mx-auto mt-6 w-24" />
       </header>
 
-      <div className="mx-auto mt-10 grid max-w-5xl gap-6 lg:grid-cols-2">
-        {/* Free */}
-        <section className="relative flex flex-col rounded-3xl border border-border bg-card p-6 shadow-card md:p-8">
-          <div className="flex items-center gap-3">
-            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-secondary">
-              <Gauge className="h-5 w-5 text-muted-foreground" />
+      <div className="mx-auto mt-12 grid max-w-5xl gap-8 lg:grid-cols-2 px-4">
+        {/* Free Plan Card */}
+        <section className="group relative flex flex-col rounded-[2.5rem] border border-border bg-card p-8 shadow-card transition-all duration-300 hover:shadow-xl hover:-translate-y-1 overflow-hidden">
+          <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-secondary/30 blur-3xl group-hover:bg-secondary/50 transition-colors" />
+          
+          <div className="flex items-center gap-4">
+            <div className="grid h-14 w-14 place-items-center rounded-2xl bg-secondary text-muted-foreground group-hover:bg-secondary/80 transition-colors">
+              <Gauge className="h-6 w-6" />
             </div>
             <div>
-              <h2 className="text-xl font-extrabold">الخطة المجانية</h2>
-              <p className="text-xs text-muted-foreground">للبداية واستكشاف المنصة</p>
+              <h2 className="text-2xl font-black">الخطة المجانية</h2>
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Basic Access</p>
             </div>
           </div>
 
-          <div className="mt-6 flex items-end gap-2">
-            <span className="text-5xl font-extrabold">$0</span>
-            <span className="pb-2 text-sm text-muted-foreground">/ شهريًا</span>
+          <div className="mt-8 flex items-baseline gap-1">
+            <span className="text-6xl font-black tracking-tighter">$0</span>
+            <span className="text-muted-foreground font-bold">/ للأبد</span>
           </div>
 
-          <ul className="mt-6 flex-1 space-y-3 text-sm">
+          <ul className="mt-8 flex-1 space-y-4">
             {FREE_FEATURES.map((f) => (
-              <li key={f.label} className="flex items-start gap-2.5">
-                <span
-                  className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full ${
-                    f.ok ? "bg-emerald-500/15 text-emerald-600" : "bg-muted text-muted-foreground"
-                  }`}
-                >
+              <li key={f.label} className="flex items-start gap-3 text-sm">
+                <span className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full ${f.ok ? "bg-emerald-500/10 text-emerald-600" : "bg-muted text-muted-foreground"}`}>
                   {f.ok ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
                 </span>
-                <span className={f.ok ? "" : "text-muted-foreground line-through"}>{f.label}</span>
+                <span className={f.ok ? "font-medium" : "text-muted-foreground line-through"}>{f.label}</span>
               </li>
             ))}
           </ul>
@@ -185,136 +179,117 @@ function PricingPage() {
           <button
             onClick={chooseFree}
             disabled={busy !== null}
-            className="mt-7 inline-flex items-center justify-center gap-2 rounded-xl border border-border py-3.5 text-sm font-extrabold transition-smooth hover:border-gold disabled:opacity-60"
+            className="mt-10 inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-border py-4 text-sm font-black transition-all hover:bg-foreground hover:text-background hover:border-foreground disabled:opacity-50"
           >
-            {busy === "free" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            متابعة بالمجاني
+            {busy === "free" ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowLeft className="h-4 w-4" />}
+            الاستمرار بالحساب المجاني
           </button>
-          {plan === "free" && profile?.onboarded && (
-            <p className="mt-3 text-center text-xs font-bold text-muted-foreground">خطتك الحالية</p>
-          )}
         </section>
 
-        {/* Pro */}
-        <section className="relative flex flex-col overflow-hidden rounded-3xl border-2 border-gold bg-gradient-royal p-6 text-primary-foreground shadow-luxury md:p-8">
-          <span className="absolute end-6 top-6 rounded-full bg-gradient-gold px-3 py-1 text-[11px] font-extrabold" style={{ color: "var(--royal-deep)" }}>
-            الأكثر اختيارًا
-          </span>
-          <div className="flex items-center gap-3">
-            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-gold" style={{ color: "var(--royal-deep)" }}>
-              <Crown className="h-5 w-5" />
+        {/* Pro Plan Card */}
+        <section className="group relative flex flex-col overflow-hidden rounded-[2.5rem] border-2 border-gold bg-gradient-royal p-8 text-primary-foreground shadow-luxury transition-all duration-300 hover:shadow-[0_20px_50px_rgba(212,175,55,0.3)] hover:-translate-y-1">
+          <div className="absolute -right-12 -top-12 h-40 w-40 rounded-full bg-gold/10 blur-3xl" />
+          
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-gold text-royal-deep">
+                <Crown className="h-6 w-6" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-black text-gold">منارة بلس</h2>
+                <p className="text-xs font-bold text-gold/60 uppercase tracking-widest">Unlimited Pro</p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-xl font-extrabold text-gold">منارة بلس</h2>
-              <p className="text-xs text-primary-foreground/70">لكل طالب يريد التفوّق فعلًا</p>
-            </div>
+            <span className="rounded-full bg-gold/20 px-3 py-1 text-[10px] font-black text-gold border border-gold/30 backdrop-blur-sm">
+              الموصى به
+            </span>
           </div>
 
-          <div className="mt-6 flex items-end gap-2">
-            <span className="text-5xl font-extrabold text-gold">$1</span>
-            <span className="pb-2 text-sm text-primary-foreground/70">/ شهريًا</span>
+          <div className="mt-8 flex items-baseline gap-1">
+            <span className="text-6xl font-black tracking-tighter text-gold">$1</span>
+            <span className="text-gold/60 font-bold">/ شهريًا</span>
           </div>
 
-          <ul className="mt-6 flex-1 space-y-3 text-sm">
+          <ul className="mt-8 flex-1 space-y-4">
             {PRO_FEATURES.map((f) => (
-              <li key={f} className="flex items-start gap-2.5">
+              <li key={f} className="flex items-start gap-3 text-sm">
                 <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-gold/20 text-gold">
                   <Check className="h-3.5 w-3.5" />
                 </span>
-                <span>{f}</span>
+                <span className="font-bold">{f}</span>
               </li>
             ))}
           </ul>
 
-          <div className="mt-6 grid grid-cols-3 gap-2 text-center text-[11px] font-bold text-primary-foreground/80">
-            <div className="rounded-xl border border-gold/30 bg-white/5 p-2">
-              <Bot className="mx-auto mb-1 h-4 w-4 text-gold" /> مساعد ذكي
-            </div>
-            <div className="rounded-xl border border-gold/30 bg-white/5 p-2">
-              <Palette className="mx-auto mb-1 h-4 w-4 text-gold" /> لوح Pro
-            </div>
-            <div className="rounded-xl border border-gold/30 bg-white/5 p-2">
-              <Download className="mx-auto mb-1 h-4 w-4 text-gold" /> PDF بلا حدود
-            </div>
+          <div className="mt-8 grid grid-cols-3 gap-3">
+            {[Bot, Palette, Download].map((Icon, i) => (
+              <div key={i} className="rounded-2xl border border-gold/20 bg-white/5 p-3 text-center backdrop-blur-md">
+                <Icon className="mx-auto h-5 w-5 text-gold" />
+              </div>
+            ))}
           </div>
 
           <button
             onClick={openPro}
             disabled={busy !== null}
-            className="mt-7 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-gold py-3.5 text-sm font-extrabold shadow-gold transition-smooth hover:scale-[1.01] disabled:opacity-60"
-            style={{ color: "var(--royal-deep)" }}
+            className="mt-10 inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-gold py-4 text-sm font-black text-royal-deep shadow-gold transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
           >
             {busy === "pro" ? <Loader2 className="h-4 w-4 animate-spin" /> : <InfinityIcon className="h-4 w-4" />}
-            اشترك الآن
+            ترقية الحساب الآن
           </button>
-          {plan === "pro" && (
-            <p className="mt-3 inline-flex items-center justify-center gap-1.5 text-center text-xs font-bold text-gold">
-              <BadgeCheck className="h-4 w-4" /> اشتراكك فعّال
-            </p>
-          )}
         </section>
       </div>
 
       {proOpen && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 px-4 py-8" onClick={() => setProOpen(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setProOpen(false)}>
           <div
-            className="max-h-full w-full max-w-md overflow-y-auto rounded-3xl border border-gold/40 bg-card p-6 shadow-luxury"
+            className="w-full max-w-md overflow-hidden rounded-[2rem] border border-gold/30 bg-card shadow-luxury animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h3 className="text-lg font-extrabold">طلب الاشتراك في «منارة بلس»</h3>
-                <p className="mt-1 text-xs text-muted-foreground">أدخل بياناتك، وسنفتح لك محادثة واتساب مع الإدارة لإتمام الاشتراك.</p>
-              </div>
-              <button onClick={() => setProOpen(false)} aria-label="إغلاق" className="rounded-lg border border-border p-1.5">
-                <X className="h-4 w-4" />
-              </button>
+            <div className="bg-gradient-royal p-6 text-center">
+              <Crown className="mx-auto h-10 w-10 text-gold" />
+              <h3 className="mt-2 text-xl font-black text-gold">تفعيل المنارة بلس</h3>
+              <p className="text-xs text-gold/70">أدخل بياناتك وسيتم توجيهك للمبيعات</p>
             </div>
 
-            <label className="mt-5 block text-xs font-bold">الصف الدراسي</label>
-            <input
-              value={grade}
-              onChange={(e) => setGrade(e.target.value)}
-              placeholder="مثال: الصف التاسع"
-              className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm"
-            />
+            <div className="p-8">
+              <label className="block text-xs font-black mb-1.5 uppercase tracking-tighter text-muted-foreground">الصف الدراسي</label>
+              <input
+                value={grade}
+                onChange={(e) => setGrade(e.target.value)}
+                placeholder="مثال: الصف الثاني عشر"
+                className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm focus:ring-2 focus:ring-gold outline-none"
+              />
 
-            <label className="mt-4 block text-xs font-bold">العمر</label>
-            <input
-              value={age}
-              onChange={(e) => setAge(e.target.value.replace(/[^\d]/g, ""))}
-              inputMode="numeric"
-              placeholder="مثال: 15"
-              className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm"
-            />
+              <label className="mt-5 block text-xs font-black mb-1.5 uppercase tracking-tighter text-muted-foreground">العمر</label>
+              <input
+                value={age}
+                onChange={(e) => setAge(e.target.value.replace(/[^\d]/g, ""))}
+                placeholder="مثال: 17"
+                className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm focus:ring-2 focus:ring-gold outline-none"
+              />
 
-            <label className="mt-4 block text-xs font-bold">ملاحظة (اختياري)</label>
-            <textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              rows={3}
-              className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm"
-            />
-
-            <button
-              onClick={submitPro}
-              disabled={busy === "pro"}
-              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-gold py-3 text-sm font-extrabold shadow-gold disabled:opacity-60"
-              style={{ color: "var(--royal-deep)" }}
-            >
-              {busy === "pro" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              إرسال الطلب عبر واتساب
-            </button>
-            <p className="mt-3 text-center text-[11px] text-muted-foreground">
-              يُحفظ طلبك في لوحة التحكم، ويُفعَّل الاشتراك فور موافقة الإدارة.
-            </p>
+              <button
+                onClick={submitPro}
+                disabled={busy === "pro"}
+                className="mt-8 w-full rounded-2xl bg-gradient-gold py-4 text-sm font-black text-royal-deep shadow-gold transition-all active:scale-95 disabled:opacity-50"
+              >
+                {busy === "pro" ? <Loader2 className="h-4 w-4 animate-spin" /> : "تأكيد وإرسال عبر واتساب"}
+              </button>
+              
+              <button onClick={() => setProOpen(false)} className="mt-4 w-full text-xs font-bold text-muted-foreground hover:text-foreground underline underline-offset-4">
+                إلغاء الأمر
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      <p className="mx-auto mt-8 max-w-2xl text-center text-xs text-muted-foreground">
-        يمكنك تغيير خطتك في أي وقت من هذه الصفحة. الأسعار بالدولار الأمريكي وتشمل جميع التحديثات القادمة.
-      </p>
+      <footer className="mt-16 text-center">
+        <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.2em] opacity-60">
+          Al-Manara Educational Portal • Safe & Secure
+        </p>
+      </footer>
     </div>
   );
 }
