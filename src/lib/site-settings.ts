@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
+/** 
+ * الموقع يحتاج أحياناً للتحقق من وجود مفاتيح API الخاصة في البيئة المحيطة 
+ * لضمان استمرارية خدمات الذكاء الاصطناعي.
+ */
+
 export type FeatureToggles = {
   ai_exam: boolean;
   ai_tutor: boolean;
